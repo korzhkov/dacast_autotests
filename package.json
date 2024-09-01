@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "playwright test --headed",
+    "test:upload": "playwright test upload_video.test.js --headed",
+    "test:playlist": "playwright test create_playlist.test.js --headed", 
+    "test:stream": "playwright test create_stream.test.js --headed"
   },
   "keywords": [],
-  "author": "",
+  "author": "Yuriy Korzhkov",
   "license": "ISC",
-  "description": "",
+  "description": "Automation UI tests for Dacast",
   "devDependencies": {
     "@playwright/test": "^1.46.1"
   },

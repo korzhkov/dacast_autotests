@@ -1,104 +1,118 @@
-require('dotenv').config(); // to load environment variables from .env file
-const { chromium } = require('playwright');
+const { test, expect } = require('@playwright/test');
+const path = require('path');
+require('dotenv').config();
 
-(async () => {
-  let browser;
-  try {
-    browser = await chromium.launch({ headless: false }); // to launch browser in non-headless mode (means we can see what is happening)
-    const context = await browser.newContext();
-    const page = await context.newPage();
+test('Create stream test', async ({ page }) => {
+  // Increase timeout to 5 minutes
+  test.setTimeout(300000);
 
-    const host = process.env._HOST; // Retrieve host from .env
-    const username = process.env._USERNAME; // Retrieve username from .env
-    const password = process.env._PASSWORD; // Retrieve password from .env
+  const host = process.env._HOST;
+  const username = process.env._USERNAME;
+  const password = process.env._PASSWORD;
 
-    // Go to the login page
+  await test.step('Login', async () => {
+    // Navigate to the login page
     await page.goto(`https://${host}/login`);
 
-  // Fill in the login form
+    // Fill in login credentials and submit
     await page.getByLabel('Email').fill(username);
     await page.locator('input[name="password"]').fill(password);
     await page.getByRole('button', { name: 'Log In' }).click();
+  });
 
-    console.log('Login form submitted successfully.');
+  await test.step('Check for existing videos and upload if necessary', async () => {
+    // Go to the Videos page
+    await page.locator('#scrollbarWrapper').getByText('Videos').click();
+    
+    // Wait for either video links or the "Upload your first Video!" message
+    await Promise.race([
+      page.waitForSelector('a[href^="/videos/"]', { timeout: 10000 }),
+      page.waitForSelector('text="Upload your first Video!"', { timeout: 10000 })
+    ]);
 
-    //  Adding VOD Stream
+    // Check if there's a message about uploading the first video
+    const noVideosText = await page.locator('text="Upload your first Video!"').count();
+    if (noVideosText > 0) {
+      // If the message is found, log a message and run the upload_video.test.js
+      console.log('No videos found. Running upload_video.test.js');
+      const { uploadVideo } = require('./upload_video.test.js');
+      await uploadVideo({ page });
+    }
+  });
+
+  await test.step('Create VOD Stream', async () => {
+    // Start the process of creating a new stream
     await page.getByRole('button', { name: 'Add +' }).click();
     await page.getByText('Live Stream', { exact: true }).click();
     await page.locator('.sc-fPrdXf > div:nth-child(4) > div').first().click();
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Selecting video for this livestream (first with name "sample_video.MOV")
+    // Select the first video file for the stream
+    await page.locator('label').filter({ hasText: 'sample_video.MOV' }).locator('span').first().click();
     
-    await page.locator('label').filter({ hasText: 'sample_video.MOV' }).locator('span').click();
+    // Complete the stream creation process
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await page.getByRole('button', { name: 'Done' }).click();
+  });
 
-    // Navigate to the LiveStreams page
+  await test.step('Navigate to LiveStreams page', async () => {
+    // Go to the Live Streams page
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
+
+    // Check if there's a message about creating the first stream
+    const createFirstStreamText = await page.locator('text="Create your first Live Stream!"').count();
     
-    // Several steps to make sure list of livestreams is loaded (probably could be optimized)
-    await page.waitForTimeout(5000);
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-    console.log('Page refreshed. Waiting for livestreams to appear...');
-
-    // Wait for the livestreams to load with a longer timeout
-    try {
-        await page.waitForSelector('a[href^="/livestreams/"]', { timeout: 30000 });
-        console.log('Livestreams loaded successfully after refresh.');
-    } catch (error) {
-        console.error('Error: Livestreams did not appear after refresh:', error);
-        throw error;
+    if (createFirstStreamText > 0) {
+      // If the message is found, wait for 5 seconds and reload the page
+      await page.waitForTimeout(5000);
+      await page.reload();
     }
 
+    // Wait for either stream links or the "Create your first Live Stream!" message
+    await Promise.race([
+      page.waitForSelector('a[href^="/livestreams/"]', { timeout: 30000 }),
+      page.waitForSelector('text="Create your first Live Stream!"', { timeout: 30000 })
+    ]);
 
-// Find all livestreams links and click the first one that matches the name
-const livestreamLinks = await page.$$('a[href^="/livestreams/"]');
-let livestreamClicked = false;
-for (const link of livestreamLinks) {
-  const linkText = await link.textContent();
-  if (linkText.includes('Pre-recorded stream')) {
-    await link.click();
-    livestreamClicked = true;
-    break;
-  }
-}
-
-if (!livestreamClicked) {
-  throw new Error('No matching livestream found');
-}
-
-// Changing description of the video
-await page.locator('textarea[type="textarea"]').click();
-await page.locator('textarea[type="textarea"]').fill('This is a test livestream');
-
-// Click outside of the text area to save the changes
-await page.locator('#pageContentContainer div').filter({ hasText: 'Title Date Status Features' }).nth(2).click();
-
-// Wait for the "Changes have been saved" text to appear
-try {
-  await page.waitForSelector('text="Changes have been saved"', { timeout: 5000 });
-  console.log('Changes have been saved successfully.');
-} catch (error) {
-  console.error('Error: "Changes have been saved" text did not appear:', error);
-}
-  console.log('Test completed successfully.');
-
-    await page.pause();
-    
-  } catch (error) {
-    console.error('An error occurred:', error.message);
-    if (error.stack) {
-      console.error('Stack trace:', error.stack);
+    // If there are still no stream links, wait again and reload
+    if (!(await page.$('a[href^="/livestreams/"]'))) {
+      await page.waitForTimeout(5000);
+      await page.reload();
+      await page.waitForSelector('a[href^="/livestreams/"]', { timeout: 30000 });
     }
-  } finally {
-    if (browser) {
-      await browser.close();
+  });
+
+  await test.step('Find and open created livestream', async () => {
+    // Find all livestream links
+    const livestreamLinks = await page.$$('a[href^="/livestreams/"]');
+    let livestreamClicked = false;
+
+    // Click on the first livestream that includes "Pre-recorded stream" in its text
+    for (const link of livestreamLinks) {
+      const linkText = await link.textContent();
+      if (linkText.includes('Pre-recorded stream')) {
+        await link.click();
+        livestreamClicked = true;
+        break;
+      }
     }
-  }
-})();
+
+    // Ensure that a livestream was found and clicked
+    expect(livestreamClicked).toBeTruthy();
+  });
+
+  await test.step('Edit livestream description', async () => {
+    // Update the livestream description
+    await page.locator('textarea[type="textarea"]').fill('This is a test livestream');
+
+    // Save the changes
+    await page.locator('#pageContentContainer div').filter({ hasText: 'Title Date Status Features' }).nth(2).click();
+
+    // Verify that the changes were saved successfully
+    await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });
+  });
+});
 
 /* to do
 Add error handling
