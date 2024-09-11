@@ -1,43 +1,12 @@
-const { test, expect } = require('@playwright/test');
-require('dotenv').config();
-
-async function uploadVideo({ page }) {
-  // Implement the video upload logic here
-  await page.getByRole('button', { name: 'Add +' }).click();
-  await page.locator('#undefined_vod').click();
-
-  const fileInput = await page.$('#browseButton');
-  expect(fileInput).toBeTruthy();
-
-  await page.evaluate((el) => { el.style.display = 'block'; }, fileInput);
-  await fileInput.setInputFiles('sample_video.MOV');
-  await page.evaluate((el) => { el.style.display = 'none'; }, fileInput);
-
-  await page.getByPlaceholder('Search by Title...').fill('Sample Video');
-  await page.getByRole('button', { name: 'Upload' }).click();
-
-  await page.getByText('Complete', { exact: true }).click();
-}
+const { test, expect } = require('./utils');
+const { uploadVideo } = require('./helpers/fileUploader');
 
 test('Upload video test', async ({ page }) => {
   // Set a longer timeout for this test as video upload might take a while
   test.setTimeout(300000);
 
-  // Load environment variables
-  const host = process.env._HOST;
-  const username = process.env._USERNAME;
-  const password = process.env._PASSWORD;
-
-  await test.step('Login', async () => {
-    // Navigate to the login page and authenticate
-    await page.goto(`https://${host}/login`);
-    await page.getByLabel('Email').fill(username);
-    await page.locator('input[name="password"]').fill(password);
-    await page.getByRole('button', { name: 'Log In' }).click();
-  });
-
   await test.step('Upload video', async () => {
-    await uploadVideo({ page });
+    await uploadVideo(page, 'sample_video.MOV');
   });
 
   await test.step('Verify uploaded video', async () => {
@@ -68,7 +37,7 @@ test('Upload video test', async ({ page }) => {
 
     // Find and click on the newly uploaded video
     const videoLinks = await page.$$('a[href^="/videos/"]');
-    console.log(`Found ${videoLinks.length} video links`); // // Debugging, might be removed
+    console.log(`Found ${videoLinks.length} video links`); // Debugging, might be removed
     let videoClicked = false;
     for (const link of videoLinks) {
       const linkText = await link.textContent();
@@ -99,5 +68,3 @@ test('Upload video test', async ({ page }) => {
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
   });
 });
-
-module.exports = { uploadVideo };
