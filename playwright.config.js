@@ -14,6 +14,7 @@ module.exports = defineConfig({
     viewport: { width: 1280, height: 720 },
     actionTimeout: 0,
     ignoreHTTPSErrors: true,
+    permissions: ['clipboard-read', 'clipboard-write'],
   },
   projects: [
     {

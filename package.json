@@ -5,8 +5,9 @@
   "scripts": {
     "test": "playwright test --headed",
     "test:upload": "playwright test src/upload_video.test.js --headed",
-    "test:playlist": "playwright test src/create_playlist.test.js --headed", 
-    "test:stream": "playwright test src/create_stream.test.js --headed"
+    "test:playlist": "playwright test src/create_playlist.test.js --headed",
+    "test:stream": "playwright test src/create_stream.test.js --headed",
+    "test:vod2live": "playwright test src/create_vod2live.test.js --headed"
   },
   "keywords": [],
   "author": "Yuriy Korzhkov",
@@ -16,6 +17,7 @@
     "@playwright/test": "^1.46.1"
   },
   "dependencies": {
+    "clipboardy": "^4.0.0",
     "dotenv": "^16.4.5"
   }
 }
