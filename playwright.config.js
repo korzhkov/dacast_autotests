@@ -1,4 +1,3 @@
-// @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
@@ -14,13 +13,26 @@ module.exports = defineConfig({
     viewport: { width: 1280, height: 720 },
     actionTimeout: 0,
     ignoreHTTPSErrors: true,
-    permissions: ['clipboard-read', 'clipboard-write'],
   },
   projects: [
+    /*{
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },*/
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chrome',
+      use: { 
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        permissions: ['clipboard-write'],
+      },
     },
+    /*{
+      name: 'chromium',
+      use: { 
+        ...devices['Desktop Chrome'],
+        permissions: ['clipboard-write'],
+      },
+    },*/
   ],
-  
 });
