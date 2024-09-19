@@ -8,7 +8,7 @@ test('Create playlist test', async ({ page, browser }) => {
   // Set a longer timeout for this test as video upload and playlist creation might take a while
   test.setTimeout(300000);
 
-  await test.step('Navigate to Videos page', async () => {
+  await test.step('Navigate to Videos page to check for existing videos', async () => {
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
     
     // Wait for either "Upload your first Video!" text or the list of videos

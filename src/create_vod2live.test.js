@@ -59,6 +59,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
     await page.locator('#inputscheduledTime').click();
     await page.getByRole('button', { name: 'Create', exact: true }).first().click();
 
+    await page.waitForTimeout(10000); // Pause to avoid race condition with different test which used clipboardy
     // Copy the share link
     await page.getByRole('button', { name: 'Copy iFrame Embed Code' }).click();
     
@@ -114,6 +115,4 @@ test('Create VOD2Live stream test', async ({ page }) => {
     console.log('VOD2Live stream creation test completed');
   });
 
-  // Additional test steps can be added here
-  // ...
 });
