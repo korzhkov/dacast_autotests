@@ -62,7 +62,7 @@ The following tests are currently implemented:
 <ul>
 <li>Go to the Videos page</li>
 <li>Click on the "Upload Video" button</li>
-<li>Select a video file from your computer</li>
+<li>Select a video file to upload</li>
 <li>Wait for the video to upload</li>
 <li>Verify that the video is uploaded by checking the video list</li>
 <li>Ensure the video appears in the list with the correct title "sample_video.MOV"</li>
@@ -77,7 +77,7 @@ The following tests are currently implemented:
     <li>Verify the link format</li>
     <li>Open the share link</li>
     <li>Attempt to play the video</li>
-    <li>Verify that the video starts playing</li>
+    <li>Verify that the video starts playing (note, video contains some audio)</li>
   </ul>
 </li>
 <li>Navigate back to the Videos page</li>
