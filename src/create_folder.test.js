@@ -163,7 +163,7 @@ await test.step('Validate that videos are visible in media library', async () =>
     console.log(`Adding videos to folder: ${folderName}`);
         
     // Finding the video row (by video name)
-    const videoRow = page.locator('div[draggable="true"]').filter({ has: page.locator('span', { hasText: 'sample_video.MOV' }) }).first();
+    const videoRow = page.locator('div[draggable="true"]').filter({ has: page.locator('span', { hasText: 'sample_video2.MOV' }) }).first();
     
     // Clicking on the "More" (three dots) button in this row
     await page.waitForTimeout(2000);
