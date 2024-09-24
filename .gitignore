@@ -133,8 +133,11 @@ dist
 lastlogin.txt
 
 # Videos
-*.MOV
+#.MOV
 
 # Reports and Results
 playwright-report/
 test-results/
+
+# Docker
+Dockerfile
