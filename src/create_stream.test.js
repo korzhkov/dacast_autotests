@@ -62,6 +62,7 @@ test('Create stream test', async ({ page }) => {
     await page.getByText('Standard Passthrough Akamai Delivery').click();
     // Enable DVR
     //await page.locator('#pageContentContainer div').filter({ hasText: 'Create Live Stream Title Source Region Europe, Middle East & Africa Australia' }).locator('label').nth(1).click();
+    await page.screenshot({ path: 'screenshot.png' });
     await page.locator('xpath=//*[@id="pageContentContainer"]/div[2]/div[2]/div/div[4]/div[1]/div[1]/label').click();
     await page.waitForTimeout(1000);
     await page.locator('.flex > .sc-bBeLUv > div > span:nth-child(2) > svg').click();
