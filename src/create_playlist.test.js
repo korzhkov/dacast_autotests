@@ -68,7 +68,7 @@ test('Create playlist test', async ({ page, browser }) => {
     const formattedDate = `${currentDate.toISOString().slice(0, 19).replace('T', ' ')}.${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
     const playlistName = `This is a test playlist ${formattedDate}`;
     await page.locator('#playlistModalInput').first().fill(playlistName);
-    await page.getByRole('button', { name: 'Create' }).click();
+    await page.getByRole('button', { name: 'Create' }).first().click();
 
     // Validate playlist creation
     await expect(page.locator(`text="${playlistName}"`).first()).toBeVisible({ timeout: 10000 });
