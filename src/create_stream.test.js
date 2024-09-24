@@ -12,35 +12,19 @@ test('Create stream test', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
 
-  await test.step('Check for existing videos and upload if necessary', async () => {
-    // Navigate to the Videos page
-    await page.locator('#scrollbarWrapper').getByText('Videos').click();
-    
-    // Wait for either video links or the "Upload your first Video!" message
-    await Promise.race([
-      page.waitForSelector('a[href^="/videos/"]', { timeout: 10000 }),
-      page.waitForSelector('text="Upload your first Video!"', { timeout: 10000 })
-    ]);
-
-    // Check if there's a message about uploading the first video
-    const noVideosText = await page.locator('text="Upload your first Video!"').count();
-    if (noVideosText > 0) {
-      console.log('No videos found. Uploading a video.');
-      await uploadVideo(page, 'sample_video.MOV');
-    }
-  });
-
   await test.step('Create Stream', async () => {
     
     // Start the process of creating a new stream
 
     
     await page.getByText('Live Streams').click();
-    try {
-      await page.getByRole('button', { name: 'Create Live Stream' }).click();
-    } catch (error) {
-      console.log('Create Live Stream button not found, probably no streams available.');
-      await page.getByRole('button', { name: 'Create' }).click();
+    await page.waitForTimeout(1000);
+    const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
+    if (createLiveStreamButton) {
+      await createLiveStreamButton.click();
+    } else {
+      console.log('Create Live Stream button not found, clicking Create button instead.');
+      await page.getByRole('button', { name: 'Create' }).first().click();
     }
     
 
