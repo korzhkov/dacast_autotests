@@ -145,7 +145,7 @@ test('Create Expo test', async ({ page, browser }) => {
     const expoName = `This is a test expo ${formattedDate}`;
     await page.locator('#pageContentContainer #title').click();
     await page.locator('#pageContentContainer #title').fill(expoName);
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await page.getByRole('button', { name: 'Create', exact: true }).first().click();
 
     await expect(page.locator('text="Expo successfully created"')).toBeVisible({ timeout: 10000 });
     console.log(`Expo "${expoName}" created successfully`);
