@@ -116,7 +116,7 @@ await test.step('Validate that videos are visible in media library', async () =>
     }
 
     let attempts = 0;
-    const maxAttempts = 5; // 5 attempts to find videos (maybe could be less, but I guess it depends of transcoder as well)
+    const maxAttempts = 10; // 10 attempts to find videos (maybe could be less, but I guess it depends of transcoder as well)
 
     while (attempts < maxAttempts) {
       console.log(`Attempt ${attempts + 1} to find videos`);
@@ -133,7 +133,7 @@ await test.step('Validate that videos are visible in media library', async () =>
     }
 
     if (attempts === maxAttempts) {
-      throw new Error('Videos not found after 5 attempts');
+      throw new Error('Videos not found after 10 attempts');
     }
   });
 
