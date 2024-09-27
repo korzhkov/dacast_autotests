@@ -1,5 +1,4 @@
 const { test, expect } = require('./utils');
-const { uploadVideo } = require('./helpers/fileUploader');
 
 let clipboardy;
 let streamName;
@@ -36,9 +35,8 @@ test('Create stream test', async ({ page }) => {
     await page.getByPlaceholder('My Live Stream').fill(streamName);
     await page.locator('div:nth-child(3) > .sc-gFAWRd > #dropdownTitle > .sc-klVQfs > .sc-gsFSXq > svg > path:nth-child(2)').click();
     
-        
     // Validate that Adaptive bitrate 1080p Akamai Delivery is present (requirements)
-    const akamai1080 = page.getByText('Adaptive Bitrate 1080p Akamai Delivery');
+    const akamai1080 = page.getByText('Adaptive Bitrate 1080p Akamai Delivery').first();
     await expect(akamai1080).toBeVisible({ timeout: 1000});
     console.log('Akamai 1080p found, continuing with the test.');
 
@@ -46,7 +44,6 @@ test('Create stream test', async ({ page }) => {
     await page.getByText('Standard Passthrough Akamai Delivery').click();
     // Enable DVR
     //await page.locator('#pageContentContainer div').filter({ hasText: 'Create Live Stream Title Source Region Europe, Middle East & Africa Australia' }).locator('label').nth(1).click();
-    await page.screenshot({ path: 'screenshot.png' });
     await page.locator('xpath=//*[@id="pageContentContainer"]/div[2]/div[2]/div/div[4]/div[1]/div[1]/label').click();
     await page.waitForTimeout(1000);
     await page.locator('.flex > .sc-bBeLUv > div > span:nth-child(2) > svg').click();

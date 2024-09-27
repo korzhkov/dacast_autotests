@@ -39,9 +39,58 @@ test('Upload video test', async ({ page }) => {
       await page.waitForTimeout(5000);
       await page.reload();
       await page.waitForSelector('a[href^="/videos/"]', { timeout: 30000 });
+      await page.reload();
     }
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  await page.waitForTimeout(5000);
+    await test.step('Checking sample_video.MOV status', async () => {
+      await page.reload();
+      const maxAttempts = 5; // Maximum number of attempts to check video status
+      let attempts = 0;
+      let processingComplete = false;
 
-    
+      while (attempts < maxAttempts && !processingComplete) {
+        console.log(`Attempt ${attempts + 1}: Refreshing page and checking video status`);
+        
+        // Wait for the table to load
+        await page.waitForSelector('#videosListTable', { state: 'visible', timeout: 10000 });
+
+        // Find the row containing 'sample_video.MOV'
+        const row = await page.locator('#videosListTable tr')
+          .filter({ hasText: 'sample_video.MOV' })
+          .first();
+
+        if (await row.count() > 0) {
+          const rowText = await row.innerText();
+          console.log(`Found row with sample_video.MOV: ${rowText}`);
+
+          // Check the video status
+          if (rowText.includes('Processing')) {
+            console.log('Video is still in Processing status, will refresh again');
+            await page.reload();
+            await page.waitForTimeout(5000); // Wait for 5 seconds after reload
+          } else if (rowText.includes('Online')) {
+            console.log('Video processing completed, status is now Online');
+            processingComplete = true;
+          } else {
+            console.log('Video status is unclear, will refresh again');
+          }
+        } else {
+          console.log('sample_video.MOV not found in the list, will try again');
+        }
+
+        attempts++;
+
+        if (!processingComplete) {
+          console.log('Waiting 10 seconds before next refresh');
+          await page.waitForTimeout(10000); // Wait for 10 seconds before next attempt
+        }
+      }
+
+      if (!processingComplete) {
+        console.log('Processing did not complete after maximum attempts');
+      }});
+
     // Find and click on the newly uploaded video
     const videoLinks = await page.$$('a[href^="/videos/"]');
     console.log(`Found ${videoLinks.length} video links`); // Debugging, might be removed
@@ -61,6 +110,8 @@ test('Upload video test', async ({ page }) => {
 
 /*
 
+Below comment is not actual anymore.
+
 Section above needs to be expanded to check that video transcoding is finished and only after 
 that move to the next step. Possible issues:
 - video playback may not work if transcoding is not finished
@@ -71,13 +122,16 @@ that move to the next step. Possible issues:
 */
   await page.waitForTimeout(10000);
   console.log('Sleep for 10s to give transcoding a chance to finish');
+  
 
   await test.step('Edit video description', async () => {
     // Update the video description
-    await page.locator('textarea[type="textarea"]').fill('This is a test video');
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.toISOString().slice(0, 19).replace('T', ' ')}.${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
+    await page.locator('textarea[type="textarea"]').fill(`This is a test video ${formattedDate}`);
     
-    // Save the changes (assuming the save button is the 3rd div with the specified text)
-    await page.locator('#pageContentContainer div').filter({ hasText: 'Title Date Status Features' }).nth(2).click();
+    // Save the changes (need to click somewhere outside of the right panel to make it saved)
+    await page.getByRole('banner').getByText('Videos').first().click();
     
     // Verify the changes were saved successfully
     await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });

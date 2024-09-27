@@ -9,7 +9,9 @@
     "test:stream": "playwright test src/create_stream.test.js --headed",
     "test:vod2live": "playwright test src/create_vod2live.test.js --headed",
     "test:folder": "playwright test src/create_folder.test.js --headed",
+    "test:expo": "playwright test src/create_expo.test.js --headed",
     "test:chat": "playwright test src/validate_chat.test.js --headed",
+    "test:trial": "playwright test src/validate_free_trial.test.js --headed",
     "test:all": "node runTests.js"
   },
   "keywords": [],

@@ -115,6 +115,63 @@ The following tests are currently implemented:
 <li>Play the video to ensure it is working correctly (note, video contains some audio)</li>
 </ul>
 
+<h3>Create Expo:</h3>
+<ul>
+<li>Go to the Videos page</li>
+<li>Check for existing videos "sample_video.MOV" and "sample_video2.MOV"</li>
+<li>If the videos do not exist, upload them</li>
+<li>Validate that the video status is "Online" before proceeding</li>
+<li>Navigate to the Expos page</li>
+<li>Create a new Expo with name "This is a test expo + [current date and time]"</li>
+<li>Add two videos to the Expo using drag and drop:
+  <ul>
+    <li>Add visual indicators for source and target elements to aid in visual verification</li>
+    <li>Perform drag and drop operation</li>
+    <li>Verify that the drag and drop operation was successful</li>
+  </ul>
+</li>
+<li>Create a new section within the Expo</li>
+<li>Move a video from the main Expo to the newly created section:
+  <ul>
+    <li>Add visual indicators for source (video) and target (section) elements</li>
+    <li>Perform drag and drop operation</li>
+    <li>Verify that the video was successfully moved to the section</li>
+  </ul>
+</li>
+<li>Verify that the videos are correctly placed in the Expo and its section</li>
+<li>Configure SEO settings for the Expo:
+  <ul>
+    <li>Set a custom SEO title</li>
+    <li>Set a custom SEO description</li>
+  </ul>
+</li>
+<li>Save the Expo and get the sharing URL</li>
+<li>Navigate to the sharing Expo URL and verify:
+  <ul>
+    <li>The page loads successfully</li>
+    <li>The Expo title is displayed correctly</li>
+  </ul>
+</li>
+</ul>
+
+<h3>Validate Free Trial:</h3>
+<ul>
+<li>Navigate to the Dacast homepage</li>
+<li>Enter email and click on the "Start Free Trial" button</li>
+<li>Fill out the free trial registration form with test data:
+  <ul>
+    <li>First Name</li>
+    <li>Last Name</li>
+    <li>Work Email</li>
+    <li>Phone Number</li>
+    <li>Password</li>
+    <li>Company URL</li>
+  </ul>
+</li>
+<li>Click the "Sign up free" button</li>
+<li>[Pending] Bypass reCAPTCHA verification (to be implemented)</li>
+<li>[Pending] Confirm successful free trial registration (to be implemented once reCAPTCHA bypass is available)</li>
+</ul>
 
 **How to run:**<br>
 
@@ -128,6 +185,8 @@ Create VOD2Live stream: _npm run test:vod2live_<br>
 Upload video: _npm run test:upload_<br>
 Create playlist: _npm run test:playlist_<br>
 Create folder: _npm run test:folder_<br>
+Create Expo: _npm run test:expo_<br>
+Validate Free Trial: _npm run test:trial_<br>
 
 
 To run all tests one by one: _npm run test:all_<br>

@@ -158,21 +158,21 @@ await test.step('Validate that videos are visible in media library', async () =>
     await page.waitForTimeout(2000);
      
   });
-
+  
   await test.step('Move videos to folder', async () => { 
-    console.log(`Adding videos to folder: ${folderName}`);
+    console.log(`Adding videos to folder ${folderName} via move to option`);
         
     // Finding the video row (by video name)
     const videoRow = page.locator('div[draggable="true"]').filter({ has: page.locator('span', { hasText: 'sample_video2.MOV' }) }).first();
     
     // Clicking on the "More" (three dots) button in this row
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
     await videoRow.locator('div.sc-jXbUNg').click();
     
     // Selecting "Move To" from the dropdown menu
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
     await page.getByRole('list').locator('li').filter({ hasText: 'Move To' }).click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
     
     // Selecting the destination folder
     await expect(page.locator(`text="${folderName}"`).nth(1)).toBeVisible({ timeout: 10000 });

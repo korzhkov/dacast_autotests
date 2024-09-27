@@ -7,7 +7,9 @@ const tests = [
   'test:stream',
   'test:vod2live',
   'test:folder',
-  'test:chat'
+  'test:expo',
+  'test:chat',
+  'test:trial'
 ];
 
 for (const test of tests) {

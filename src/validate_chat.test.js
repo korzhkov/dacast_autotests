@@ -1,13 +1,15 @@
 const { test, expect } = require('@playwright/test');
+require('dotenv').config();
 
-test('Dacast full test', async ({ page }) => {
+test('Dacast chat test', async ({ page }) => {
+  const host = process.env._HOST;
   // Note: We're using the `page` fixture provided by Playwright Test
 
   test.setTimeout(120000); // Increase overall test timeout to 2 minutes
 
   await test.step('Navigate and check Matomo', async () => {
-    console.log('Navigating to dacast.com');
-    await page.goto('https://dacast.com', { waitUntil: 'networkidle', timeout: 60000 });
+    console.log('Navigating to main page of dacast.com');
+    await page.goto(`https://${host}/`, { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForTimeout(5000);
     await page.getByRole('heading', { name: 'This website uses cookies' }).click();
     console.log('GDPR banner found');
