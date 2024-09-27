@@ -134,7 +134,7 @@ test('Create Expo test', async ({ page, browser }) => {
       await page.getByRole('button', { name: 'Create' }).first().click();
     } else {
       console.log('No "Create your first Expo!" text found, looking for Create Expo button');
-      await page.getByRole('button', { name: 'Create Expo' }).click();
+      await page.getByRole('button', { name: 'Create Expo' }).first().click();
     }
 
     // Wait for the modal to appear and click on the "Create Expo" text
