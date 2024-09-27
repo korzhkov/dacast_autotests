@@ -131,7 +131,7 @@ test('Create Expo test', async ({ page, browser }) => {
 
     if (createFirstExpoText > 0) {
       console.log('Found "Create your first Expo!" text');
-      await page.getByRole('button', { name: 'Create' }).click();
+      await page.getByRole('button', { name: 'Create' }).first().click();
     } else {
       console.log('No "Create your first Expo!" text found, looking for Create Expo button');
       await page.getByRole('button', { name: 'Create Expo' }).click();
