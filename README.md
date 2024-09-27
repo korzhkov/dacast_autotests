@@ -193,3 +193,8 @@ To run all tests one by one: _npm run test:all_<br>
 
 **How to see the report:**<br>
 _npx playwright show-report_
+
+<h3>Known issues:</h3>
+<ul>
+  <li>Sometimes video_sample2.MOV is not found in create folder test if there were a lot of tests run before. Need to ustilize search functionality to find the video.</li>
+</ul>

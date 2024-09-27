@@ -4,10 +4,10 @@ const { execSync } = require('child_process');
 const tests = [
   'test:upload',
   'test:playlist',
+  'test:expo',
+  'test:folder',
   'test:stream',
   'test:vod2live',
-  'test:folder',
-  'test:expo',
   'test:chat',
   'test:trial'
 ];
