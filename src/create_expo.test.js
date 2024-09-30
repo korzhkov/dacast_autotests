@@ -122,12 +122,15 @@ test('Create Expo test', async ({ page, browser }) => {
     });
   });
 
+  await page.pause();
+
   await test.step('Create Expo', async () => {
     console.log('Creating new Expo');
     await page.locator('#scrollbarWrapper').getByText('Expos').click();
     
+    await page.waitForTimeout(5000);
     // Check if "Create your first Expo!" text exists, if not using another button
-    const createFirstExpoText = await page.locator('text="Create your first Expo!"').count();
+    const createFirstExpoText = await page.getByText('Create your first Expo!').count();
 
     if (createFirstExpoText > 0) {
       console.log('Found "Create your first Expo!" text');
