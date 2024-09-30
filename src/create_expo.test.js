@@ -122,8 +122,6 @@ test('Create Expo test', async ({ page, browser }) => {
     });
   });
 
-  await page.pause();
-
   await test.step('Create Expo', async () => {
     console.log('Creating new Expo');
     await page.locator('#scrollbarWrapper').getByText('Expos').click();
