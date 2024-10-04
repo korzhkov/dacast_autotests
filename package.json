@@ -15,7 +15,7 @@
     "test:schedule": "node runTests.js test:schedule",
     "test:quick": "node runTests.js test:quick",
     "test:quick2": "node runTests.js test:quick2",
-    "test:all": "node runTests.js",
+    "test:all": "node runTests.js test:all",
     "test:all:startfrom": "node runTests.js test:all:startfrom"
   },
   "keywords": [],

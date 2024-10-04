@@ -30,28 +30,28 @@ const testFileNames = {
   'test:quick2': 'quick2.test.js'
 };
 
+const allTests = Object.keys(testFileNames);
+console.log('All tests:', allTests);
+
+let testsToRun = isAllTests ? allTests : [args[0]];
+
+if (startFromTest) {
+  const startIndex = allTests.indexOf(startFromTest);
+  if (startIndex !== -1) {
+    testsToRun = allTests.slice(startIndex);
+  } else {
+    console.error(`Error: Start test "${startFromTest}" not found in the test list.`);
+    process.exit(1);
+  }
+}
+
+console.log('Tests to run:', testsToRun);
+
 async function runTestsSequentially() {
   const resultsPath = path.join(__dirname, 'test-results');
   let mergedResults = {};
 
   console.log(`Starting test run at ${new Date().toISOString()}`);
-
-  const allTests = Object.keys(testFileNames);
-  console.log('All tests:', allTests);
-
-  let testsToRun = isAllTests ? allTests : [args[0]];
-
-  if (startFromTest) {
-    const startIndex = allTests.indexOf(startFromTest);
-    if (startIndex !== -1) {
-      testsToRun = allTests.slice(startIndex);
-    } else {
-      console.error(`Error: Start test "${startFromTest}" not found in the test list.`);
-      return;
-    }
-  }
-
-  console.log('Tests to run:', testsToRun);
 
   for (const currentTest of testsToRun) {
     const testFileName = testFileNames[currentTest];
