@@ -3,9 +3,10 @@ require('dotenv').config();
 
 test('Dacast chat test', async ({ page }) => {
   const host = process.env._HOST;
-  // Note: We're using the `page` fixture provided by Playwright Test
+ // Note: We're using the `page` fixture provided by Playwright Test
 
   test.setTimeout(120000); // Increase overall test timeout to 2 minutes
+
 
   await test.step('Navigate and check Matomo', async () => {
     console.log('Navigating to main page of dacast.com');

@@ -3,16 +3,20 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test --headed",
-    "test:upload": "playwright test src/upload_video.test.js --headed",
-    "test:playlist": "playwright test src/create_playlist.test.js --headed",
-    "test:stream": "playwright test src/create_stream.test.js --headed",
-    "test:vod2live": "playwright test src/create_vod2live.test.js --headed",
-    "test:folder": "playwright test src/create_folder.test.js --headed",
-    "test:expo": "playwright test src/create_expo.test.js --headed",
-    "test:chat": "playwright test src/validate_chat.test.js --headed",
-    "test:trial": "playwright test src/validate_free_trial.test.js --headed",
-    "test:all": "node runTests.js"
+    "test": "node runTests.js",
+    "test:chat": "node runTests.js test:chat",
+    "test:upload": "node runTests.js test:upload",
+    "test:playlist": "node runTests.js test:playlist",
+    "test:stream": "node runTests.js test:stream",
+    "test:vod2live": "node runTests.js test:vod2live",
+    "test:folder": "node runTests.js test:folder",
+    "test:expo": "node runTests.js test:expo",
+    "test:trial": "node runTests.js test:trial",
+    "test:schedule": "node runTests.js test:schedule",
+    "test:quick": "node runTests.js test:quick",
+    "test:quick2": "node runTests.js test:quick2",
+    "test:all": "node runTests.js",
+    "test:all:startfrom": "node runTests.js test:all:startfrom"
   },
   "keywords": [],
   "author": "Yuriy Korzhkov",
@@ -23,6 +27,7 @@
     "npm-run-all": "^4.1.5"
   },
   "dependencies": {
+    "axios": "^1.7.7",
     "clipboardy": "^4.0.0",
     "dotenv": "^16.4.5"
   }

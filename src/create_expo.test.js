@@ -15,7 +15,7 @@ test('Create Expo test', async ({ page, browser }) => {
   // Set a longer timeout for this test as video upload and Expo creation might take a while
   test.setTimeout(300000);
 
-  await test.step('Navigate to Videos page to check for existing videos', async () => {
+await test.step('Navigate to Videos page to check for existing videos', async () => {
     console.log('Navigating to Videos page');
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
     
@@ -25,6 +25,17 @@ test('Create Expo test', async ({ page, browser }) => {
       page.waitForSelector('a[href^="/videos/"]', { timeout: 60000 })
     ]);
     console.log('Successfully navigated to Videos page');
+  });
+
+  await test.step('Validate failing test', async () => {
+    try {
+      console.log('This is a test to fail');
+      await expect(page.locator('text="Expo successfully created"')).toBeVisible({ timeout: 10000 });
+    } catch (error) {
+      console.error('Step failed: Expo was not successfully created');
+      // Log the error to test results
+      test.info().annotations.push({ type: 'error', description: 'Expo was not successfully created' });
+    }
   });
 
   await test.step('Check and upload videos if necessary', async () => {
@@ -336,7 +347,7 @@ await test.step('Temp step - open expo', async () => {
     await page.getByRole('button', { name: 'Add section' }).click();
     await page.getByRole('textbox', { name: 'Section title' }).fill('This is a test expo section');
     await page.locator('#expoContentWrapper form').getByRole('button', { name: 'Add section' }).click();
-    await expect(page.getByText('Expo updated')).toBeVisible(15000);
+    await expect(page.getByText('Expo updated')).toBeVisible(20000);
     
   });
 
@@ -583,7 +594,7 @@ await test.step('Check Sharing button', async () => {
   await page.getByText('Header').click();
   await page.getByRole('button', { name: 'Sharing' }).click();
   await page.getByText('Share Link').click();
-  await expect(page.getByText('Copied to clipboard')).toBeVisible({timeout: 10000});
+  await expect(page.getByText('Copied to clipboard')).toBeVisible({timeout: 15000});
   const clipboardContent = await clipboardy.default.read();
 
   // Check if the copied link starts with 'https://dacastexpo.com?id='

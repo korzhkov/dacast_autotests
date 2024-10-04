@@ -1,0 +1,15 @@
+Error Report:
+
+Test: Unnamed test
+File: quick.test.js
+Error: Error: One or more steps failed
+
+Test: Unnamed test
+File: quick2.test.js
+Error: Error: One or more steps failed
+
+Total Tests: 6
+Passed Tests: 6
+Failed Tests: 2
+Skipped Tests: 0
+Duration: 5087 ms

@@ -138,6 +138,7 @@ lastlogin.txt
 # Reports and Results
 playwright-report/
 test-results/
+test-reports/
 
 # Docker
 Dockerfile

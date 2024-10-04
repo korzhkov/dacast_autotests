@@ -1,4 +1,5 @@
 const { defineConfig, devices } = require('@playwright/test');
+const path = require('path');
 
 module.exports = defineConfig({
   testDir: './src',
@@ -6,7 +7,10 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['html', { outputFolder: 'test-reports/html-report' }]
+  ],
   use: {
     trace: 'on-first-retry',
     headless: false, // Set to true if you want to run tests in headless mode

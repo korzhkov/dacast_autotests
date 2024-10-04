@@ -65,7 +65,7 @@ test('Dacast free trial test', async ({ page }) => {
 
   await test.step('Navigate to Free Trial page', async () => {
     try {
-      await page.goto(`https://${host}/`, { 
+      await page.goto(`https://www.${host}/signup?autotest=true`, { 
         waitUntil: 'domcontentloaded', 
         timeout: 120000 
       });
@@ -74,16 +74,21 @@ test('Dacast free trial test', async ({ page }) => {
       console.error('Error loading page:', error);
       throw error;
     }
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(1000);
   });
+
+
+  await page.pause();
+
+  await page.goto(`https://www.${host}/signup?autotest=true`);
+  await page.waitForTimeout(5000);
 
   await test.step('Fill out the Free Trial form', async () => {
     console.log('Filling out the form');
 
-    await page.getByRole('button', { name: 'OK' }).click();
-    await page.getByPlaceholder('Email').click();
-    await page.getByPlaceholder('Email').fill(`yk${Math.floor(Date.now() / 1000)}@${randomDomain}`);
-    await page.getByRole('button', { name: 'Start Free Trial' }).click();
+    await page.getByLabel('Email').click();
+    await page.getByLabel('Email').fill(`yk_${Math.floor(Date.now() / 1000)}@${randomDomain}`);
+    
 
     // Select a random first name and last name
     const firstName = getRandomElement(firstNames);
@@ -137,8 +142,17 @@ test('Dacast free trial test', async ({ page }) => {
 
     // Waiting for the reCaptcha by-pass way implemented
 
-    await page.waitForTimeout(500000);
-    await page.pause();
+  });
+
+  await test.step('Validate the free trial', async () => {
+    try {
+      await expect(page.getByRole('button', { name: 'SUPED DEAL!' })).toBeVisible({ timeout: 20000 });
+      console.log('SUPED DEAL Visible');
+    } catch (error) {
+      console.error('Test did not complete: SUPED DEAL button is not visible');
+      test.fail();  // Помечает шаг как неудачный
+      testFailed = true;
+    }
   });
 
   console.log('Test completed');

@@ -177,19 +177,19 @@ The following tests are currently implemented:
 
 Update host and credentials in the env file. Then do following:<br>
 
-Entire suite in parallel: _npm test_<br>
+Entire suite in parallel: _xvfb-run npm test_<br>
 
-Chat and GDPR banner test: _npm run test:chat_<br>
-Create stream: _npm run test:stream_<br>
-Create VOD2Live stream: _npm run test:vod2live_<br>
-Upload video: _npm run test:upload_<br>
-Create playlist: _npm run test:playlist_<br>
-Create folder: _npm run test:folder_<br>
-Create Expo: _npm run test:expo_<br>
-Validate Free Trial: _npm run test:trial_<br>
+Chat and GDPR banner test: _xvfb-run npm run test:chat_<br>
+Create stream: _xvfb-run npm run test:stream_<br>
+Create VOD2Live stream: _xvfb-run npm run test:vod2live_<br>
+Upload video: _xvfb-run npm run test:upload_<br>
+Create playlist: _xvfb-run npm run test:playlist_<br>
+Create folder: _xvfb-run npm run test:folder_<br>
+Create Expo: _xvfb-run npm run test:expo_<br>
+Validate Free Trial: _xvfb-run npm run test:trial_<br>
 
 
-To run all tests one by one: _npm run test:all_<br>
+To run all tests one by one: _xvfb-run npm run test:all_<br>
 
 **How to see the report:**<br>
 _npx playwright show-report_
