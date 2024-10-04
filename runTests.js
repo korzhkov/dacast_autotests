@@ -69,7 +69,7 @@ async function runTestsSequentially() {
       const resultsFilePath = path.join(resultsPath, 'results.json');
       if (fs.existsSync(resultsFilePath)) {
         const newResults = JSON.parse(fs.readFileSync(resultsFilePath, 'utf8'));
-        console.log(`Raw results for ${currentTest}:`, JSON.stringify(newResults, null, 2));
+        //console.log(`Raw results for ${currentTest}:`, JSON.stringify(newResults, null, 2));
         mergedResults = updateResults(mergedResults, newResults);
         
         const summary = summarizeResults(mergedResults);
