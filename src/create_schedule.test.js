@@ -7,72 +7,6 @@ test.beforeAll(async () => {
   clipboardy = await import('clipboardy');
 });
 
-async function tryClickMethods(page, selector, text) {
-  const methods = [
-    // Метод 1: Обычный клик
-    async () => {
-      console.log('Trying method 1: Normal click');
-      await page.locator(selector).getByText(text).first().click();
-    },
-    // Метод 2: Клик с force: true
-    async () => {
-      console.log('Trying method 2: Force click');
-      await page.locator(selector).getByText(text).first().click({ force: true });
-    },
-    // Метод 3: JavaScript клик
-    async () => {
-      console.log('Trying method 3: JavaScript click');
-      await page.evaluate((sel, txt) => {
-        const element = document.evaluate(`//${sel}//text()[contains(., '${txt}')]/parent::*`, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        if (element) {
-          element.click();
-        } else {
-          throw new Error('Element not found');
-        }
-      }, selector, text);
-    },
-    // Метод 4: Клик с задержкой
-    async () => {
-      console.log('Trying method 4: Click with delay');
-      await page.waitForTimeout(1000);
-      await page.locator(selector).getByText(text).first().click();
-    },
-    // Метод 5: Клик с использованием XPath
-    async () => {
-      console.log('Trying method 5: XPath click');
-      await page.locator(`//${selector}//text()[contains(., '${text}')]/parent::*`).first().click();
-    },
-    // Метод 6: Клик с ожиданием функции
-    async () => {
-      console.log('Trying method 6: Click with wait for function');
-      await page.waitForFunction((sel, txt) => {
-        const element = document.querySelector(sel);
-        return element && element.textContent.includes(txt);
-      }, { timeout: 10000 }, selector, text);
-      await page.locator(selector).getByText(text).first().click();
-    },
-    // Метод 7: Клик с использованием клавиатуры
-    async () => {
-      console.log('Trying method 7: Keyboard click');
-      await page.locator(selector).getByText(text).first().focus();
-      await page.keyboard.press('Enter');
-    }
-  ];
-
-  for (let i = 0; i < methods.length; i++) {
-    try {
-      await methods[i]();
-      console.log(`Method ${i + 1} succeeded`);
-      return; // Выходим из функции, если метод успешен
-    } catch (error) {
-      console.log(`Method ${i + 1} failed:`, error.message);
-      if (i === methods.length - 1) {
-        throw new Error('All click methods failed');
-      }
-    }
-  }
-}
-
 test('Create Schedule test', async ({ page, browser }) => {
   console.log('Starting Create Schedule test');
   console.log(`Using browser: ${browser.browserType().name()}`);
@@ -80,7 +14,7 @@ test('Create Schedule test', async ({ page, browser }) => {
   console.log(`User agent: ${await page.evaluate(() => navigator.userAgent)}`);
   // Set a longer timeout for this test as video upload and Expo creation might take a while
   test.setTimeout(300000);
-
+/*
   await test.step('Navigate to Videos page to check for existing videos', async () => {
     console.log('Navigating to Videos page');
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
@@ -192,7 +126,7 @@ test('Create Schedule test', async ({ page, browser }) => {
     });
   });
 
-
+*/
   // Create Schedule
   await test.step('Create Schedule', async () => {
     console.log('Creating new Schedule');
@@ -286,9 +220,17 @@ await test.step('Temp step - open expo', async () => {
     await page.waitForTimeout(5000);
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
-    console.log('Attempting to click "Screen Recording"');
-    await tryClickMethods(page, '#calendarGrid', 'Screen Recording');
 
+await page.pause();
+
+  await page.locator('.buttons > div:nth-child(3) > div:nth-child(2) > div > svg').click();
+  await page.getByText('day', { exact: true }).click();
+  await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.locator('#calendarGrid').getByText('Screen Recording').click();
+
+    // await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
     console.log('Screen Recording clicked');
     await page.waitForTimeout(10000);
     await page.locator('.flex > .flex > svg:nth-child(2)').first().click();
