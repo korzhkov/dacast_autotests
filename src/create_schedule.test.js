@@ -217,7 +217,6 @@ await test.step('Temp step - open expo', async () => {
     await page.mouse.up();
 
     // Wait a bit to ensure the drop is processed
-    await page.pause();
     await page.waitForTimeout(5000);
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
