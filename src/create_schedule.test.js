@@ -220,7 +220,6 @@ await test.step('Temp step - open expo', async () => {
     await page.waitForTimeout(5000);
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
-    await page.pause();
     await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
     console.log('Screen Recording clicked');
     await page.waitForTimeout(10000);
