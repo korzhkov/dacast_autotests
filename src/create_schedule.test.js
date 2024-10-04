@@ -14,7 +14,7 @@ test('Create Schedule test', async ({ page, browser }) => {
   console.log(`User agent: ${await page.evaluate(() => navigator.userAgent)}`);
   // Set a longer timeout for this test as video upload and Expo creation might take a while
   test.setTimeout(300000);
-/*
+
   await test.step('Navigate to Videos page to check for existing videos', async () => {
     console.log('Navigating to Videos page');
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
@@ -126,7 +126,6 @@ test('Create Schedule test', async ({ page, browser }) => {
     });
   });
 
-*/
   // Create Schedule
   await test.step('Create Schedule', async () => {
     console.log('Creating new Schedule');
@@ -221,32 +220,45 @@ await test.step('Temp step - open expo', async () => {
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
 
-//await page.pause();
-  await page.waitForTimeout(1000);
-  await page.locator('.buttons > div:nth-child(3) > div:nth-child(2) > div > svg').click();
-  await page.waitForTimeout(1000);
-  await page.getByText('day', { exact: true }).click();
-  await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: '+', exact: true }).click();
-  await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: '+', exact: true }).click();
-  await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: '+', exact: true }).click();
-  await page.waitForTimeout(1000);
-  await page.locator('#calendarGrid').getByText('Screen Recording').click();
-  await page.waitForTimeout(1000);
+  });
 
-    // await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
+  await test.step('Edit event', async () => {
+
+//OMG following crazy actions required to get click working on linix server we use. Maybe due to outdated node/playwrite/chrome versions.
+// Normally this works: await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
+// If you don't understand what's happening here: 1. switching from week to day view; 2. zooming in 3. clicking on the event  
+    await page.waitForTimeout(1000);
+    await page.locator('.buttons > div:nth-child(3) > div:nth-child(2) > div > svg').click();
+    await page.waitForTimeout(1000);
+    await page.getByText('day', { exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: '+', exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: '+', exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: '+', exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.locator('#calendarGrid').getByText('Screen Recording').click();
+    await page.waitForTimeout(1000);
+
     console.log('Screen Recording clicked');
     await page.waitForTimeout(10000);
     await page.locator('.flex > .flex > svg:nth-child(2)').first().click();
+    console.log('Edit event clicked to adjust event start time');
     await page.waitForTimeout(5000);
     const currentTime = new Date();
     const oneMinuteLater = new Date(currentTime.getTime() + 60000);
+    // Format the time one minute from now as HH:MM in 24-hour format
+    // All this weird stuff is neccesary because pointer showing in calendar current time is not correct
     const formattedTime = oneMinuteLater.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
     await page.locator('#inputstart-time').fill(formattedTime);
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Save' }).click();
+    console.log('Event saved');
+  });
+
+  await test.step('Test even preview', async () => {
+
     console.log('Now we should wait 45 seconds before click to Preview button');
     await page.waitForTimeout(45000);
     await page.getByRole('button', { name: 'Preview' }).click();
