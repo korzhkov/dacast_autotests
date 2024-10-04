@@ -221,9 +221,9 @@ await test.step('Temp step - open expo', async () => {
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
     await page.locator('#calendarGrid').getByText('Screen Recording').click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
     await page.locator('.flex > .flex > svg:nth-child(2)').first().click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000);
     const currentTime = new Date();
     const oneMinuteLater = new Date(currentTime.getTime() + 60000);
     const formattedTime = oneMinuteLater.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
