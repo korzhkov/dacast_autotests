@@ -17,6 +17,7 @@ console.log('Is all tests:', isAllTests);
 console.log('Start from test:', startFromTest);
 
 const testFileNames = {
+  'test:clean': 'cleaner.test.js',
   'test:upload': 'upload_video.test.js',
   'test:playlist': 'create_playlist.test.js',
   'test:expo': 'create_expo.test.js',
@@ -28,6 +29,7 @@ const testFileNames = {
   'test:chat': 'validate_chat.test.js',
   'test:quick': 'quick.test.js',
   'test:quick2': 'quick2.test.js'
+  
 };
 
 const allTests = Object.keys(testFileNames);

@@ -23,7 +23,11 @@ test('Quick test', async ({ page }) => {
       testFailed = true;
     }
   });
-
+/*
+  await test.step('Fail by timeout', async () => {
+    await expect(page.getByRole('button', { name: 'YSK' })).toBeVisible({ timeout: 2000 });
+  });
+*/
   await test.step('Failed test', async () => {
     try {
       await expect(page.getByRole('button', { name: 'SUPED DEAL!' })).toBeVisible({ timeout: 2000 });

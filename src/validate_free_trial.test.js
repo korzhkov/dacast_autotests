@@ -87,7 +87,7 @@ test('Dacast free trial test', async ({ page }) => {
     console.log('Filling out the form');
 
     await page.getByLabel('Email').click();
-    await page.getByLabel('Email').fill(`yk_${Math.floor(Date.now() / 1000)}@${randomDomain}`);
+    await page.getByLabel('Email').fill(`yk_${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@${randomDomain}`);
     
 
     // Select a random first name and last name
@@ -143,13 +143,13 @@ test('Dacast free trial test', async ({ page }) => {
     // Waiting for the reCaptcha by-pass way implemented
 
   });
-
-  await test.step('Validate the free trial', async () => {
+  await page.waitForTimeout(5000);
+  await test.step('Validate Dashboard', async () => {
     try {
-      await expect(page.getByRole('button', { name: 'SUPED DEAL!' })).toBeVisible({ timeout: 20000 });
-      console.log('SUPED DEAL Visible');
+      await expect(page.getByText(/Welcome, .+!/)).toBeVisible({ timeout: 20000 });
+      console.log('Woclome message is visible');
     } catch (error) {
-      console.error('Test did not complete: SUPED DEAL button is not visible');
+      console.error('Test did not complete: Welcome is not visible');
       test.fail();  // Помечает шаг как неудачный
       testFailed = true;
     }

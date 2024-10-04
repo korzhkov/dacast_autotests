@@ -27,6 +27,10 @@ test('Create Schedule test', async ({ page, browser }) => {
     console.log('Successfully navigated to Videos page');
   });
 
+  
+  
+  
+  
   await test.step('Check and upload videos if necessary', async () => {
     // Function to check for existing videos
     async function checkExistingVideos() {
@@ -184,7 +188,11 @@ await test.step('Temp step - open expo', async () => {
 
   await test.step('Drag and drop first video to Schedule', async () => {
     console.log(`Going to drag and drop first video to Schedule`);
-    
+    // Added search for video to minimize chances of the failure when there is a lot of other videos in the list
+    await page.getByPlaceholder('Search by Title...').click();
+    await page.getByPlaceholder('Search by Title...').fill('screen');
+    await page.getByPlaceholder('Search by Title...').press('Enter');
+    await page.waitForTimeout(5000); // Added timeout to ensure the search results are visible
     const sourceElement = page.getByText('Screen Recording').first();
     const targetElement = page.locator('.current-time');
 
@@ -254,8 +262,7 @@ await test.step('Analytics test', async () => {
   
     await page.getByRole('link', { name: 'Analytics Analytics' }).click();
     await page.waitForTimeout(5000);
-    await page.pause();
-  
+      
     // need to wait, analytics broken, reported to Olivier.
 
 });

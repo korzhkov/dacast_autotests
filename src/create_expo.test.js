@@ -16,28 +16,21 @@ test('Create Expo test', async ({ page, browser }) => {
   test.setTimeout(300000);
 
 await test.step('Navigate to Videos page to check for existing videos', async () => {
+  try {
     console.log('Navigating to Videos page');
-    await page.locator('#scrollbarWrapper').getByText('Videos').click();
-    
-    // Wait for either "Upload your first Video!" text or the list of videos
+    await page.locator('#scrollbarWrapper').getByText('Videos').click( {timeout: 10000} );  
     await Promise.race([
       page.waitForSelector('text="Upload your first Video!"', { timeout: 60000 }),
       page.waitForSelector('a[href^="/videos/"]', { timeout: 60000 })
     ]);
     console.log('Successfully navigated to Videos page');
-  });
+  } catch (error) {
+    console.error('Error navigating to Videos page:', error);
+    test.fail(error);
+  }
+});
 
-  await test.step('Validate failing test', async () => {
-    try {
-      console.log('This is a test to fail');
-      await expect(page.locator('text="Expo successfully created"')).toBeVisible({ timeout: 10000 });
-    } catch (error) {
-      console.error('Step failed: Expo was not successfully created');
-      // Log the error to test results
-      test.info().annotations.push({ type: 'error', description: 'Expo was not successfully created' });
-    }
-  });
-
+  
   await test.step('Check and upload videos if necessary', async () => {
     // Function to check for existing videos
     async function checkExistingVideos() {
@@ -451,9 +444,7 @@ await test.step('Drag and drop video to the section', async () => {
     console.log('Drag and drop completed');
 
     // Check if drag and drop was successful
-    await page.waitForTimeout(2000);
-
-    await expect(page.getByText('Expo updated')).toBeVisible(3000); // This probably enough to check for the update
+    await expect(page.getByText('Expo updated')).toBeVisible(5000); // This probably enough to check for the update
 
     // Validate that video is actually added to the section
     const videoInSection = await page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).first().isVisible();
