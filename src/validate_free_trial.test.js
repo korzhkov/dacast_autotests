@@ -78,8 +78,6 @@ test('Dacast free trial test', async ({ page }) => {
   });
 
 
-  await page.pause();
-
   await page.goto(`https://www.${host}/signup?autotest=true`);
   await page.waitForTimeout(5000);
 

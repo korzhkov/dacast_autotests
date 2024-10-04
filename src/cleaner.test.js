@@ -7,8 +7,7 @@ test('Cleaner', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
 // This is not even started yet
-  await page.pause();
-
+  
 await test.step('Clean Videos', async () => {
 
 await page.goto(`https://${host}/videos`);
@@ -43,7 +42,6 @@ if (!noItemsFound) {
   console.log('No items matched the search. Skipping deletion steps.');
 }
 
-await page.pause();
 });
 
 await test.step('Clean Streams', async () => {
@@ -62,8 +60,6 @@ if (!noStreamsText) {
 } else {
   console.log('No streams found. Skipping deletion steps.');
 }
-
-await page.pause();
 
 }); 
 });
