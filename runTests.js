@@ -17,7 +17,7 @@ console.log('Is all tests:', isAllTests);
 console.log('Start from test:', startFromTest);
 
 const testFileNames = {
-  'test:clean': 'cleaner.test.js',
+  //'test:clean': 'cleaner.test.js',
   'test:upload': 'upload_video.test.js',
   'test:playlist': 'create_playlist.test.js',
   'test:expo': 'create_expo.test.js',
@@ -27,9 +27,9 @@ const testFileNames = {
   'test:vod2live': 'create_vod2live.test.js',
   'test:trial': 'validate_free_trial.test.js',
   'test:chat': 'validate_chat.test.js',
-  'test:clean': 'cleaner.test.js',
-  'test:quick': 'quick.test.js',
-  'test:quick2': 'quick2.test.js'
+ // 'test:clean': 'cleaner.test.js',
+  //'test:quick': 'quick.test.js',
+  //'test:quick2': 'quick2.test.js'
   
 };
 

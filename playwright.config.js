@@ -1,8 +1,9 @@
 const { defineConfig, devices } = require('@playwright/test');
-const { sendToSlack } = require('./src/helpers/slackNotifier');
+// const { sendToSlack } = require('./src/helpers/slackNotifier');
 
 module.exports = defineConfig({
   testDir: './src',
+  stopOnFirstFailure: false,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -11,7 +12,7 @@ module.exports = defineConfig({
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
     ['html', { outputFolder: 'test-reports/html-report' }],
-    ['./src/helpers/customReporter.js']  // Добавьте эту строку
+    ['./src/helpers/customReporter.js'] 
   ],
   use: {
     trace: 'on-first-retry',
@@ -41,4 +42,5 @@ module.exports = defineConfig({
       },
     },*/
   ],
+  
 });
