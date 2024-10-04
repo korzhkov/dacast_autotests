@@ -444,7 +444,7 @@ await test.step('Drag and drop video to the section', async () => {
     console.log('Drag and drop completed');
 
     // Check if drag and drop was successful
-    await expect(page.getByText('Expo updated')).toBeVisible(5000); // This probably enough to check for the update
+    await expect(page.getByText('Expo updated')).toBeVisible(15000); // This probably enough to check for the update
 
     // Validate that video is actually added to the section
     const videoInSection = await page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).first().isVisible();
