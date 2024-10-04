@@ -220,8 +220,12 @@ await test.step('Temp step - open expo', async () => {
     await page.waitForTimeout(5000);
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
-    await page.locator('#calendarGrid').getByText('Screen Recording').click();
-    await page.waitForTimeout(5000);
+    await page.pause();
+    await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
+    console.log('Screen Recording clicked');
+    await page.waitForTimeout(10000);
+    //await expect(page.locator('#pageContentContainer div').filter({ hasText: 'Duration' })).toBeVisible({timeout: 10000});
+    // console.log('Screen Recording editor is visible');
     await page.locator('.flex > .flex > svg:nth-child(2)').first().click();
     await page.waitForTimeout(5000);
     const currentTime = new Date();
