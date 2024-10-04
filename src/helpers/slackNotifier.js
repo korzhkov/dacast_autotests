@@ -3,7 +3,7 @@ const axios = require('axios');
 
 const SLACK_TOKEN = process.env._SLACK_TOKEN; // Токен берется из .env
 const SLACK_URL = 'https://slack.com/api/chat.postMessage';
-const SLACK_CHANNEL = '#ysk_test';
+const SLACK_CHANNEL = '#slack-messages-test';
 
 async function sendToSlack(message, testName, type = 'info') {
   const username = type === 'error' ? 'Test Error Bot' : 'Test Info Bot';
