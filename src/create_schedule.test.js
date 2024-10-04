@@ -241,7 +241,7 @@ await test.step('Temp step - open expo', async () => {
     await page.locator('#calendarGrid').getByText('Screen Recording').click();
     await page.waitForTimeout(1000);
 
-    console.log('Screen Recording clicked');
+    console.log('Clicked on the event in calendar to adjust event start time');
     await page.waitForTimeout(10000);
     await page.locator('.flex > .flex > svg:nth-child(2)').first().click();
     console.log('Edit event clicked to adjust event start time');

@@ -5,8 +5,7 @@ const host = process.env._HOST_LOGGED;
 
 test('Cleaner', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
-  test.setTimeout(300000);
-// This is not even started yet
+  test.setTimeout(30000);
   
 await test.step('Clean Videos', async () => {
 
