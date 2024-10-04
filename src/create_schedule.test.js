@@ -221,14 +221,20 @@ await test.step('Temp step - open expo', async () => {
     await expect(page.locator('#calendarGrid').getByText('Screen Recording')).toBeVisible({timeout: 10000});
     console.log('Drag and drop completed');
 
-await page.pause();
-
+//await page.pause();
+  await page.waitForTimeout(1000);
   await page.locator('.buttons > div:nth-child(3) > div:nth-child(2) > div > svg').click();
+  await page.waitForTimeout(1000);
   await page.getByText('day', { exact: true }).click();
+  await page.waitForTimeout(1000);
   await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.waitForTimeout(1000);
   await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.waitForTimeout(1000);
   await page.getByRole('button', { name: '+', exact: true }).click();
+  await page.waitForTimeout(1000);
   await page.locator('#calendarGrid').getByText('Screen Recording').click();
+  await page.waitForTimeout(1000);
 
     // await page.locator('#calendarGrid').getByText('Screen Recording').first().click();
     console.log('Screen Recording clicked');
