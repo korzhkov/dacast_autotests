@@ -102,7 +102,7 @@ test('Create stream test', async ({ page }) => {
     await page.getByRole('link', { name: 'Live Streams' }).click();
 
     // If there are still no stream links, wait again and reload
-    await page.waitForTimeout(10000);
+    await page.waitForTimeout(15000);
     await page.reload();
     console.log('Reloaded the page to get the stream appeared.');
     
