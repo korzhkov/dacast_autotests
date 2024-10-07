@@ -286,15 +286,7 @@ await test.step('Temp step - open expo', async () => {
     await page.waitForTimeout(2000)
 
 
-await test.step('Analytics test', async () => {
-  console.log('Analytics test');
-  
-    await page.getByRole('link', { name: 'Analytics Analytics' }).click();
-    await page.waitForTimeout(5000);
-      
-    // need to wait, analytics broken, reported to Olivier.
 
-});
   console.log('Test completed');    // Here you can add verification steps to check if the drop was successful
     
   });

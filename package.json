@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node runTests.js",
+    "test:analytics": "node runTests.js test:analytics",
     "test:clean": "node runTests.js test:clean",
     "test:chat": "node runTests.js test:chat",
     "test:upload": "node runTests.js test:upload",

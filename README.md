@@ -154,6 +154,19 @@ The following tests are currently implemented:
 </li>
 </ul>
 
+<h3>Validate Analytics:</h3>
+<ul>
+<li>Navigate to the Analytics page and validate that the page is loaded and Time Period is working on Dashboard of the Analytics page</li>
+<li>Generate and navigate to a random analytics section/URL</li>
+  <ul>
+    <li>It uses random sections from the list of predefined sections: Audience, Data, Storage, Content, Engagement, and Paywall</li>
+    <ul><li>For some sections it uses random format (Time, Location or Browser)</li></ul>
+    <li>It uses random timeRange from the list, except Custom</li>
+  </ul>
+<li>Attempt to export data in CSV or XLS format (format also selected randomly)</li>
+<li>Verify the exported file extension (should be .csv or .xls) and size (should be more than 0)</li>
+</ul>
+
 <h3>Validate Free Trial:</h3>
 <ul>
 <li>Navigate to the Dacast homepage</li>
@@ -173,6 +186,16 @@ The following tests are currently implemented:
 <li>[Pending] Confirm successful free trial registration (to be implemented once reCAPTCHA bypass is available)</li>
 </ul>
 
+<h3>Environment Variables:</h3>
+<p>Create a `.env` file in the project root with the following variables:</p>
+<ul>
+<li>_HOST: The base URL of the Dacast application</li>
+<li>_HOST_LOGGED: The URL for logged-in users</li>
+<li>_EMAIL: Email for login</li>
+<li>_PASSWORD: Password for login</li>
+<li>_SLACK_TOKEN: Slack token for notifications</li>
+</ul>
+
 **How to run:**<br>
 
 Update host and credentials in the env file. Then do following:<br>
@@ -187,7 +210,7 @@ Create playlist: _xvfb-run npm run test:playlist_<br>
 Create folder: _xvfb-run npm run test:folder_<br>
 Create Expo: _xvfb-run npm run test:expo_<br>
 Validate Free Trial: _xvfb-run npm run test:trial_<br>
-
+Validate Analytics: _xvfb-run npm run test:analytics_<br>
 
 To run all tests one by one: _xvfb-run npm run test:all_<br>
 
@@ -197,4 +220,7 @@ _npx playwright show-report_
 <h3>Known issues:</h3>
 <ul>
   <li>Sometimes video_sample2.MOV is not found in create folder test if there were a lot of tests run before. Need to ustilize search functionality to find the video.</li>
+  <li>The same happens in the Expo sometimes, so cleaner is needed.</li>
+  <li>Slack notifications works fine for errors, but info messages kind of weird so far, had no time to debug it.</li>
 </ul>
+
