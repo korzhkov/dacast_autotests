@@ -224,5 +224,6 @@ _npx playwright show-report_
   <li>Sometimes video_sample2.MOV is not found in create folder test if there were a lot of tests run before. Need to ustilize search functionality to find the video.</li>
   <li>The same happens in the Expo sometimes, so cleaner is needed.</li>
   <li>Slack notifications works fine for errors, but info messages kind of weird so far, had no time to debug it.</li>
+  <li>Need an option to skip some tests e.g. now VOD2Live stream doesn't work and would be nice to have such option in the command line.</li>
 </ul>
 
