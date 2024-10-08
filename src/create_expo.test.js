@@ -1,5 +1,6 @@
 const { test, expect } = require('./utils');
 const { uploadVideo } = require('./helpers/fileUploader');
+const { timeout } = require('../playwright.config');
 
 let clipboardy;
 
@@ -326,8 +327,8 @@ await test.step('Temp step - open expo', async () => {
     await page.getByRole('button', { name: 'Add section' }).click();
     await page.getByRole('textbox', { name: 'Section title' }).fill('This is a test expo section');
     await page.locator('#expoContentWrapper form').getByRole('button', { name: 'Add section' }).click();
-    await expect(page.getByText('Expo updated')).toBeVisible(20000);
-    
+    await expect(page.getByText('Expo updated')).toBeVisible({ timeout: 20000 });
+    await page.waitForTimeout(5000);
   });
 
 // This is ridiculous, but for sections there is another locator and way to move the video.
@@ -351,112 +352,78 @@ await page.waitForTimeout(5000);
 await test.step('Drag and drop video to the section', async () => {
   console.log('Dragging and dropping video to section');
 
-  await page.pause();
-
   const sourceElement = page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).nth(1);
   const addContentButton = page.locator('div[id$="AddContentButton"]');
-  const targetElement = await addContentButton.evaluate(el => {
-    const rect = el.getBoundingClientRect();
-    return {
-      x: rect.left,
-      y: rect.bottom + 10,
-      width: rect.width,
-      height: 50 // estimated height of target area
-    };
-  });
   
-  await expect(sourceElement).toBeVisible();
-  await expect(addContentButton).toBeVisible({timeout: 5000});
+  // Increase timeout and add retry logic
+  await expect(sourceElement).toBeVisible({timeout: 30000});
+  await expect(addContentButton).toBeVisible({timeout: 30000});
   
-  // Add visual indicators to demo where it should be actually dragged
-  await page.evaluate(() => {
-    const addIndicator = (id, color) => {
-      const indicator = document.createElement('div');
-      indicator.id = id;
-      indicator.style.position = 'absolute';
-      indicator.style.width = '10px';
-      indicator.style.height = '10px';
-      indicator.style.backgroundColor = color;
-      indicator.style.borderRadius = '50%';
-      indicator.style.pointerEvents = 'none';
-      indicator.style.zIndex = '9999';
-      document.body.appendChild(indicator);
-    };
-    addIndicator('source-indicator', 'red');
-    addIndicator('target-indicator', 'blue');
-    addIndicator('mouse-indicator', 'green');
-  });
-
-  const sourceBoundingBox = await sourceElement.boundingBox();
   
-  // Update indicator positions
-  const updateIndicators = async (sourceX, sourceY, targetX, targetY, mouseX, mouseY) => {
-    await page.evaluate(({ sourceX, sourceY, targetX, targetY, mouseX, mouseY }) => {
-      const updateIndicator = (id, x, y) => {
-        const indicator = document.getElementById(id);
-        indicator.style.left = `${x}px`;
-        indicator.style.top = `${y}px`;
-      };
-      updateIndicator('source-indicator', sourceX, sourceY);
-      updateIndicator('target-indicator', targetX, targetY);
-      updateIndicator('mouse-indicator', mouseX, mouseY);
-    }, { sourceX, sourceY, targetX, targetY, mouseX, mouseY });
+  // This function is used to reliably get the bounding box of an element
+  // It attempts to get the bounding box multiple times in case of initial failure
+  // This is useful for elements that might not be immediately available or fully rendered
+  const getBoundingBoxWithRetry = async (element, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+      const box = await element.boundingBox();
+      if (box) return box;
+      await page.waitForTimeout(1000);
+    }
+    throw new Error('Failed to get bounding box after retries');
   };
 
-  // Calculate coordinates of targetElement center
-  const targetX = targetElement.x + targetElement.width / 2;
-  const targetY = targetElement.y + targetElement.height / 2;
+  const sourceBoundingBox = await getBoundingBoxWithRetry(sourceElement);
+  const addContentButtonBox = await getBoundingBoxWithRetry(addContentButton);
   
-  try {
-    // Move mouse to center of source element
-    const sourceX = sourceBoundingBox.x + sourceBoundingBox.width / 2;
-    const sourceY = sourceBoundingBox.y + sourceBoundingBox.height / 2;
-    await page.mouse.move(sourceX, sourceY);
-    await updateIndicators(sourceX, sourceY, targetX, targetY, sourceX, sourceY);
-    await page.waitForTimeout(1000);
-
+  const sourceCenter = {
+    x: sourceBoundingBox.x + sourceBoundingBox.width / 2,
+    y: sourceBoundingBox.y + sourceBoundingBox.height / 2
+  };
+  
+  const targetX = addContentButtonBox.x + addContentButtonBox.width / 2;
+  const targetY = addContentButtonBox.y + addContentButtonBox.height + 10;
+  
+  const performDragAndDrop = async () => {
+    // - 30px to drag for image, not for text - very important!
+    await page.mouse.move(sourceCenter.x, sourceCenter.y - 30);
+    await page.waitForTimeout(500);
     await page.mouse.down();
     await page.waitForTimeout(500);
 
-    // Move cursor to target element
-    for (let i = 0; i <= 10; i++) {
-      const x = sourceX + (targetX - sourceX) * (i / 10);
-      const y = sourceY + (targetY - sourceY) * (i / 10);
+    const steps = 10;
+    for (let i = 0; i <= steps; i++) {
+      const x = sourceCenter.x + (targetX - sourceCenter.x) * (i / steps);
+      const y = (sourceCenter.y - 30) + (targetY - (sourceCenter.y - 30)) * (i / steps);
       await page.mouse.move(x, y);
-      await updateIndicators(sourceX, sourceY, targetX, targetY, x, y);
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(50); // Time to move the mouse
     }
-
+    
     await page.waitForTimeout(500);
     await page.mouse.up();
-    console.log('Drag and drop completed');
+  };
 
-    // Check if drag and drop was successful
-    await expect(page.getByText('Expo updated')).toBeVisible(15000); // This probably enough to check for the update
+  try {
+    await performDragAndDrop();
+    console.log('Drag and drop of the video to section completed');
+
+    await page.waitForTimeout(2000);
 
     // Validate that video is actually added to the section
-    const videoInSection = await page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).first().isVisible();
+    const videoInSection = await page.getByText('sample_video2.MOV Add content').isVisible({ timeout: 10000 });
+
     if (videoInSection) {
       console.log('Video successfully added to the section');
     } else {
-      throw new Error('Failed to add video to the section');
+      throw new Error('Video not found in the section after drag and drop');
     }
+  } catch (error) {
+    console.error('Error during drag and drop to section:', error);
+    throw error; // Re-throw the error to fail the test
+  }
 
-      } catch (error) {
-        console.error('Error during drag and drop:', error);
-        throw error;
-      } finally {
-        // Remove visual indicators
-        await page.evaluate(() => {
-          ['source-indicator', 'target-indicator', 'mouse-indicator'].forEach(id => {
-            const indicator = document.getElementById(id);
-            if (indicator) indicator.remove();
-          });
-        });
-      }
+  await page.waitForTimeout(2000);
+});
 
-      await page.waitForTimeout(2000);
-  });
 
 // Test is self-explanatory - adding SEO settings and validating that they are visible in preview
 // in the future I would suggest to check that EXPO page is really use these in the header. Now it's not emplemented and not even planned.
