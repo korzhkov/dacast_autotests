@@ -46,8 +46,6 @@ test('Create Expo test', async ({ page, browser }) => {
       y: sourceBoundingBox.y + sourceBoundingBox.height / 2
     };
     
-    // Add visual indicators (keep your existing code for this part)
-    // ...
   
     const targetX = targetBoundingBox.x + (targetBoundingBox.width * 0.25);
     const targetY = targetBoundingBox.y + targetBoundingBox.height + 10;
@@ -65,8 +63,6 @@ test('Create Expo test', async ({ page, browser }) => {
         await page.mouse.move(x, y);
         await page.waitForTimeout(50); // Reduce wait time between steps
   
-        // Update mouse indicator (keep your existing code for this part)
-        // ...
       }
       
       await page.waitForTimeout(500);
@@ -78,22 +74,17 @@ test('Create Expo test', async ({ page, browser }) => {
       console.log('Drag and drop of the second video to Expo completed');
   
       // Validate with retry logic
-      const validateAddition = async (maxRetries = 3) => {
-        for (let i = 0; i < maxRetries; i++) {
-          const secondVideoAdded = await page.locator('#expoContentWrapper .sc-gEvEer')
-            .filter({ hasText: 'sample_video2.MOV' })
-            .first()
-            .isVisible();
-          
-          if (secondVideoAdded) {
-            console.log('Second video successfully added to Expo');
-            return true;
-          }
-          
-          if (i < maxRetries - 1) {
-            console.log(`Validation attempt ${i + 1} failed. Retrying...`);
-            await page.waitForTimeout(1000);
-          }
+      const validateAddition = async () => {
+        await page.waitForTimeout(1000); // Дать время на обновление интерфейса
+
+        const secondVideoAdded = await page.locator('#expoContentWrapper .sc-gEvEer')
+          .filter({ hasText: 'sample_video2.MOV' })
+          .first()
+          .isVisible();
+        
+        if (secondVideoAdded) {
+          console.log('Second video successfully added to Expo');
+          return true;
         }
         
         console.log('Second video not found in Expo. Checking for other indicators...');
@@ -101,7 +92,7 @@ test('Create Expo test', async ({ page, browser }) => {
         console.log(`Number of videos in Expo: ${videoCount}`);
         return videoCount >= 2;
       };
-  
+
       const isAdded = await validateAddition();
       if (!isAdded) {
         throw new Error('Failed to add second video to Expo');
@@ -110,8 +101,7 @@ test('Create Expo test', async ({ page, browser }) => {
       console.error('Error during drag and drop:', error);
       throw error; // Re-throw the error to fail the test
     } finally {
-      // Remove visual indicators (keep your existing code for this part)
-      // ...
+
     }
   
     await page.waitForTimeout(2000);
