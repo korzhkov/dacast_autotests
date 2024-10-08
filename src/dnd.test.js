@@ -22,8 +22,6 @@ test('Create Expo test', async ({ page, browser }) => {
   await test.step('Drag and drop video to the section', async () => {
     console.log('Dragging and dropping video to section');
 
-    await page.pause();
-    
     const sourceElement = page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).nth(1);
     const addContentButton = page.locator('div[id$="AddContentButton"]');
     
