@@ -276,7 +276,7 @@ await test.step('Temp step - open expo', async () => {
     
     try {
       // Move mouse to the center of source element
-      await page.mouse.move(sourceCenter.x, sourceCenter.y);
+      await page.mouse.move(sourceCenter.x, sourceCenter.y - 30);
       await page.waitForTimeout(1000);
       await page.mouse.down();
       await page.waitForTimeout(500);
@@ -364,7 +364,9 @@ await page.waitForTimeout(5000);
 // See notes above if you think that video should be moved to "Add content" playsholder.
 await test.step('Drag and drop video to the section', async () => {
   console.log('Dragging and dropping video to section');
-  
+
+  await page.pause();
+
   const sourceElement = page.locator('div').filter({ hasText: /^sample_video2\.MOV$/ }).nth(1);
   const addContentButton = page.locator('div[id$="AddContentButton"]');
   const targetElement = await addContentButton.evaluate(el => {

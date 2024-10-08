@@ -200,19 +200,21 @@ The following tests are currently implemented:
 
 Update host and credentials in the env file. Then do following:<br>
 
-Entire suite in parallel: _xvfb-run npm test_<br>
-
-Chat and GDPR banner test: _xvfb-run npm run test:chat_<br>
-Create stream: _xvfb-run npm run test:stream_<br>
-Create VOD2Live stream: _xvfb-run npm run test:vod2live_<br>
-Upload video: _xvfb-run npm run test:upload_<br>
-Create playlist: _xvfb-run npm run test:playlist_<br>
-Create folder: _xvfb-run npm run test:folder_<br>
-Create Expo: _xvfb-run npm run test:expo_<br>
-Validate Free Trial: _xvfb-run npm run test:trial_<br>
 Validate Analytics: _xvfb-run npm run test:analytics_<br>
+Upload Video: _xvfb-run npm run test:upload_<br>
+Create Playlist: _xvfb-run npm run test:playlist_<br>
+Create Expo: _xvfb-run npm run test:expo_<br>
+Create Schedule: _xvfb-run npm run test:schedule_<br>
+Create Folder: _xvfb-run npm run test:folder_<br>
+Create Stream: _xvfb-run npm run test:stream_<br>
+Create VOD2Live stream: _xvfb-run npm run test:vod2live_<br>
+Validate Free Trial: _xvfb-run npm run test:trial_<br>
+Chat and GDPR banner test: _xvfb-run npm run test:chat_<br>
 
 To run all tests one by one: _xvfb-run npm run test:all_<br>
+
+There is an option to run a sequesnce of tests starting from a specific test: _xvfb-run npm run test:all:startfrom -- test:schedule_ - this will run all tests starting from Schedule test.
+
 
 **How to see the report:**<br>
 _npx playwright show-report_

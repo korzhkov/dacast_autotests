@@ -18,6 +18,7 @@ console.log('Start from test:', startFromTest);
 
 const testFileNames = {
   //'test:clean': 'cleaner.test.js',
+  'test:dnd': 'dnd.test.js',
   'test:analytics': 'validate_analytics.test.js',
   'test:upload': 'upload_video.test.js',
   'test:playlist': 'create_playlist.test.js',
