@@ -131,7 +131,12 @@ dist
 
 # Temp files
 lastlogin.txt
-
+dnd.test.js
+quick.test.js
+quick2.test.js
+TEMPplaywright.config
+testSlackNotifier.js
+error_report.txt
 # Videos
 #.MOV
 
@@ -142,3 +147,4 @@ test-reports/
 
 # Docker
 Dockerfile
+
