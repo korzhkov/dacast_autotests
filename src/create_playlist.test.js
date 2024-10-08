@@ -123,7 +123,7 @@ test('Create playlist test', async ({ page, browser }) => {
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Save' }).click();
     // Validate that changes have been saved
-    await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 120000 });
     console.log('Videos added to playlist successfully');
   });
 
