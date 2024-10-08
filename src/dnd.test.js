@@ -108,28 +108,7 @@ test('Create Expo test', async ({ page, browser }) => {
       }
     } catch (error) {
       console.error('Error during drag and drop:', error);
-      
-      // Attempt alternative method using JavaScript events
-      console.log('Attempting alternative drag and drop method...');
-      await page.evaluate(({ sourceSelector, targetSelector }) => {
-        const source = document.querySelector(sourceSelector);
-        const target = document.querySelector(targetSelector);
-        if (!source || !target) throw new Error('Source or target element not found');
-        
-        const dragStartEvent = new DragEvent('dragstart', { bubbles: true });
-        const dropEvent = new DragEvent('drop', { bubbles: true });
-        source.dispatchEvent(dragStartEvent);
-        target.dispatchEvent(dropEvent);
-      }, { 
-        sourceSelector: sourceElement.selector || 'div:has-text("sample_video2.MOV")', 
-        targetSelector: targetElement.selector || 'div[data-id^="no_section"]' 
-      });
-      
-      // Validate again after alternative method
-      const isAddedAlternative = await validateAddition();
-      if (!isAddedAlternative) {
-        throw new Error('Failed to add second video to Expo using alternative method');
-      }
+      throw error; // Re-throw the error to fail the test
     } finally {
       // Remove visual indicators (keep your existing code for this part)
       // ...
