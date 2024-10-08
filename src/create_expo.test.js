@@ -179,6 +179,18 @@ await test.step('Temp step - open expo', async () => {
 // Also there are different locators for each step and a little different drag and drop ways.
 // Note, Expo UI loads kind of slow.
 
+  await test.step('Use search to display only videos', async () => {  
+
+    await expect(page.getByPlaceholder('Search by Title...')).toBeVisible({timeout: 20000});
+    await page.getByPlaceholder('Search by Title...').click();
+    await page.waitForTimeout(500);
+    await page.getByPlaceholder('Search by Title...').fill('sample_video');
+    await page.waitForTimeout(5000);
+    await page.getByPlaceholder('Search by Title...').press('Enter');
+    await page.waitForTimeout(5000);
+
+  });
+
   await test.step('Drag and drop first video to Expo', async () => {
     console.log(`Going to drag and drop first video to Expo`);
     
@@ -192,22 +204,6 @@ await test.step('Temp step - open expo', async () => {
     await expect(sourceElement).toBeVisible({timeout: 10000});
     await expect(targetElement).toBeVisible({timeout: 10000});
 
-    /*
-    // Add visual indicator before starting drag and drop
-    await page.evaluate(() => {
-      const indicator = document.createElement('div');
-      indicator.id = 'drag-indicator';
-      indicator.style.position = 'absolute';
-      indicator.style.width = '10px';
-      indicator.style.height = '10px';
-      indicator.style.backgroundColor = 'red';
-      indicator.style.borderRadius = '50%';
-      indicator.style.pointerEvents = 'none';
-      indicator.style.zIndex = '9999';
-      document.body.appendChild(indicator);
-    });
-
-    */
     // Get coordinates of source element
     const sourceBoundingBox = await sourceElement.boundingBox();
     const sourceX = sourceBoundingBox.x + sourceBoundingBox.width / 2;
