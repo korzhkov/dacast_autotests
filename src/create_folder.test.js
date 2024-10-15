@@ -109,6 +109,13 @@ await test.step('Validate that videos are visible in media library', async () =>
       console.log('Jumping to media library and attempting to find videos, might take a while if those just uploaded. but normally 2 attempts are enough...');
       await page.waitForTimeout(2000); // Little pause after clicking on Media library
 
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.waitForTimeout(500);
+      await page.getByPlaceholder('Search by Title...').fill('sample_video');
+      await page.waitForTimeout(500);
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(5000);
+
       const video1 = await page.locator('div[draggable="true"]').filter({ hasText: 'sample_video.MOV' }).count();
       const video2 = await page.locator('div[draggable="true"]').filter({ hasText: 'sample_video2.MOV' }).count();
 

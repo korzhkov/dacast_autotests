@@ -92,7 +92,7 @@ test('Create playlist test', async ({ page, browser }) => {
     }
 
     let attempts = 0;
-    const maxAttempts = 5; // 5 attempts to find videos (maybe could be less)
+    const maxAttempts = 10; // 10 attempts to find videos (maybe could be less)
 
     while (attempts < maxAttempts) {
       console.log(`Attempt ${attempts + 1} to find videos`);
@@ -109,7 +109,7 @@ test('Create playlist test', async ({ page, browser }) => {
     }
 
     if (attempts === maxAttempts) {
-      throw new Error('Videos not found after 5 attempts');
+      throw new Error('Videos not found after 10 attempts');
     }
 
     console.log('Adding videos to playlist');

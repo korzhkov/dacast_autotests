@@ -186,6 +186,10 @@ The following tests are currently implemented:
 <li>[Pending] Confirm successful free trial registration (to be implemented once reCAPTCHA bypass is available)</li>
 </ul>
 
+<h3>Cleaner:</h3>
+
+Going step by step and cleaning up the platform from the test videos/streams/folders/playlists/expos and schedulers, **including trash folder**. Temporary it's not deleting long videos required for Schedule test. If you run all tests it will be run first by default and takes about 2 minutes. If you want to avoid it then run _xvfb-run npm run test:all:startfrom -- test:analytics_
+
 <h3>Environment Variables:</h3>
 <p>Create a `.env` file in the project root with the following variables:</p>
 <ul>

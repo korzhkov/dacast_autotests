@@ -16,7 +16,7 @@ test('Create stream test', async ({ page }) => {
     // Start the process of creating a new stream
 
     
-    await page.getByText('Live Streams').click();
+    await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
     const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
     if (createLiveStreamButton) {
