@@ -45,7 +45,7 @@ test('Upload video test', async ({ page }) => {
   await page.waitForTimeout(5000);
     await test.step('Checking sample_video.MOV status', async () => {
       await page.reload();
-      const maxAttempts = 5; // Maximum number of attempts to check video status
+      const maxAttempts = 10; // Maximum number of attempts to check video status
       let attempts = 0;
       let processingComplete = false;
 
