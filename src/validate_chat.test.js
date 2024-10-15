@@ -65,14 +65,6 @@ test('Dacast chat test', async ({ page }) => {
     } else {
       console.error('OK button is not enabled');
     }
-
-    // Check if the OK button disappeared after clicking
-    const okButtonVisible = await okButton.isVisible();
-    console.log('OK button is still visible after click:', okButtonVisible);
-
-    if (okButtonVisible) {
-      console.error('OK button is still visible after click, test may fail');
-    }
   });
 
   await test.step('Open chat', async () => {
