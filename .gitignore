@@ -144,6 +144,10 @@ error_report.txt
 playwright-report/
 test-results/
 test-reports/
+results/
+
+#Misc
+scripts/
 
 # Docker
 Dockerfile
