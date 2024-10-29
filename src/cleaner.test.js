@@ -1,101 +1,104 @@
 const { test, expect } = require('./utils');
-require('dotenv').config();
-const host = process.env._HOST_LOGGED;
+const { getEnvVars } = require('./helpers/envHelper');
 
+// Получаем окружение из параметра командной строки --workenv=xxx
+const workenvArg = process.argv.find(arg => arg.startsWith('--workenv='));
+const env = workenvArg ? workenvArg.split('=')[1] : (process.env.WORKENV || 'prod');
 
 test('Cleaner', async ({ page }) => {
-  // Set a longer timeout for this test as stream creation might take a while
+  const { hostLogged } = getEnvVars(env);
   test.setTimeout(240000);
 
-  
-await test.step('Clean Videos', async () => {
-  await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/videos?perPage=100`);
+  console.log(`Running cleaner test in ${env.toUpperCase()} environment`);
 
-  await page.waitForTimeout(5000);
-
-  const noVideosText = await page.locator('text="Upload your first Video!"').count() > 0;
-
-  if (!noVideosText) {
-    await page.getByPlaceholder('Search by Title...').click();
-    await page.getByPlaceholder('Search by Title...').fill('sample');
-    await page.waitForTimeout(2000);
-    await page.getByPlaceholder('Search by Title...').press('Enter');
+  await test.step('Clean Videos', async () => {
     await page.waitForTimeout(5000);
-  } else {
-    console.log('No videos found. Skipping search steps.');
-  }
+    await page.goto(`https://${hostLogged}/videos?perPage=100`);
 
-  if (!noVideosText) {
-    const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
+    await page.waitForTimeout(5000);
 
-    if (!noItemsFound) {
-      await page.getByRole('row', { name: 'Title Size Date Status Features' }).locator('label div').click();
-      await page.getByRole('button', { name: 'Bulk Actions' }).click();
-      await page.getByRole('list').getByText('Delete').click();
-      await page.getByRole('button', { name: 'Delete' }).click();
-      await expect(page.getByText('item(s) deleted')).toBeVisible({timeout: 30000});
+    const noVideosText = await page.locator('text="Upload your first Video!"').count() > 0;
+
+    if (!noVideosText) {
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.getByPlaceholder('Search by Title...').fill('sample');
+      await page.waitForTimeout(2000);
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(5000);
     } else {
-      console.log('No items matched the search. Skipping deletion steps.');
+      console.log('No videos found. Skipping search steps.');
     }
-  } else {
-    console.log('No videos found. Skipping deletion steps.');
-  }
-});
 
-await test.step('Clean Streams', async () => {
-  await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/livestreams?perPage=100`);
+    if (!noVideosText) {
+      const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
 
-  await page.waitForTimeout(5000);
-
-  const noStreamsText = await page.locator('text="Create your first Live Stream!"').count() > 0;
-
-  if (!noStreamsText) {
-    await page.getByPlaceholder('Search by Title...').click();
-    await page.getByPlaceholder('Search by Title...').fill('Pre-recorded stream');
-    await page.waitForTimeout(2000);
-    await page.getByPlaceholder('Search by Title...').press('Enter');
-    await page.waitForTimeout(5000);
-  } else {
-    console.log('No streams found. Skipping search steps.');
-  }
-
-  if (!noStreamsText) {
-    const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
-
-    if (!noItemsFound) {
-      await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
-      await page.getByRole('button', { name: 'Bulk Actions' }).click();
-      await page.getByRole('list').getByText('Delete').click();
-      await page.getByRole('button', { name: 'Delete' }).click();
-      await expect(page.getByText('item(s) deleted')).toBeVisible({timeout: 30000});
+      if (!noItemsFound) {
+        await page.getByRole('row', { name: 'Title Size Date Status Features' }).locator('label div').click();
+        await page.getByRole('button', { name: 'Bulk Actions' }).click();
+        await page.getByRole('list').getByText('Delete').click();
+        await page.getByRole('button', { name: 'Delete' }).click();
+        await expect(page.getByText('item(s) deleted')).toBeVisible({timeout: 30000});
+      } else {
+        console.log('No items matched the search. Skipping deletion steps.');
+      }
     } else {
-      console.log('No items matched the search. Skipping deletion steps.');
+      console.log('No videos found. Skipping deletion steps.');
     }
-  } else {
-    console.log('No streams found. Skipping deletion steps.');
-  }
-});
+  });
 
-await test.step('Clean Playlists', async () => {
-  //await page.locator('#scrollbarWrapper').getByText('Playlists').click();
-  await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/playlists?perPage=100`);
-
-  await page.waitForTimeout(5000);
-
-  const noPlaylistsText = await page.locator('text="Create your first playlist!"').count() > 0;
-
-  if (!noPlaylistsText) {
-    await page.getByPlaceholder('Search by Title...').click();
-    await page.getByPlaceholder('Search by Title...').fill('This is a test');
-    await page.waitForTimeout(2000);
-    await page.getByPlaceholder('Search by Title...').press('Enter');
+  await test.step('Clean Streams', async () => {
     await page.waitForTimeout(5000);
-  } else {
-    console.log('No playlists found. Skipping search steps.');
-  }
+    await page.goto(`https://${hostLogged}/livestreams?perPage=100`);
+
+    await page.waitForTimeout(5000);
+
+    const noStreamsText = await page.locator('text="Create your first Live Stream!"').count() > 0;
+
+    if (!noStreamsText) {
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.getByPlaceholder('Search by Title...').fill('Pre-recorded stream');
+      await page.waitForTimeout(2000);
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(5000);
+    } else {
+      console.log('No streams found. Skipping search steps.');
+    }
+
+    if (!noStreamsText) {
+      const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
+
+      if (!noItemsFound) {
+        await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
+        await page.getByRole('button', { name: 'Bulk Actions' }).click();
+        await page.getByRole('list').getByText('Delete').click();
+        await page.getByRole('button', { name: 'Delete' }).click();
+        await expect(page.getByText('item(s) deleted')).toBeVisible({timeout: 30000});
+      } else {
+        console.log('No items matched the search. Skipping deletion steps.');
+      }
+    } else {
+      console.log('No streams found. Skipping deletion steps.');
+    }
+  });
+
+  await test.step('Clean Playlists', async () => {
+    //await page.locator('#scrollbarWrapper').getByText('Playlists').click();
+    await page.waitForTimeout(5000);
+    await page.goto(`https://${hostLogged}/playlists?perPage=100`);
+
+    await page.waitForTimeout(5000);
+
+    const noPlaylistsText = await page.locator('text="Create your first playlist!"').count() > 0;
+
+    if (!noPlaylistsText) {
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.getByPlaceholder('Search by Title...').fill('This is a test');
+      await page.waitForTimeout(2000);
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(5000);
+    } else {
+      console.log('No playlists found. Skipping search steps.');
+    }
 
 
 if (!noPlaylistsText) {
@@ -118,7 +121,7 @@ if (!noPlaylistsText) {
 
 await test.step('Clean Schedulers', async () => {
   await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/schedulers?perPage=100`);
+  await page.goto(`https://${hostLogged}/schedulers?perPage=100`);
 
   await page.waitForTimeout(5000);
 
@@ -154,7 +157,7 @@ await test.step('Clean Schedulers', async () => {
 
 await test.step('Clean Expo', async () => {
   await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/expos?perPage=100`);
+  await page.goto(`https://${hostLogged}/expos?perPage=100`);
 
   await page.waitForTimeout(5000);
 
@@ -196,7 +199,7 @@ await test.step('Clean Expo', async () => {
 
 await test.step('Clean Folders', async () => {
   await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/folders`);
+  await page.goto(`https://${hostLogged}/folders`);
 
   await page.waitForTimeout(5000);
 
@@ -237,7 +240,7 @@ await test.step('Clean Folders', async () => {
 
 await test.step('Clean Trash', async () => {
   await page.waitForTimeout(5000);
-  await page.goto(`https://${host}/folders`);
+  await page.goto(`https://${hostLogged}/folders`);
 
   await page.getByText('Trash', { exact: true }).first().click();
   

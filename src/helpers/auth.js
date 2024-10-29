@@ -1,3 +1,5 @@
+const { getEnvVars } = require('./envHelper');
+
 async function login(page, host, username, password) {
   await page.goto(`https://${host}/login`);
   await page.getByLabel('Email').fill(username);
@@ -6,10 +8,7 @@ async function login(page, host, username, password) {
 }
 
 async function setupAuth(page) {
-  const host = process.env._HOST;
-  const username = process.env._USERNAME;
-  const password = process.env._PASSWORD;
-
+  const { host, username, password } = getEnvVars(process.env.WORKENV);
   await login(page, host, username, password);
 }
 

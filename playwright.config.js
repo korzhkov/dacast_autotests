@@ -1,7 +1,15 @@
 const { defineConfig, devices } = require('@playwright/test');
-// const { sendToSlack } = require('./src/helpers/slackNotifier');
 
-module.exports = defineConfig({
+// Base Chrome configuration that will be used by all tests
+const chromeConfig = {
+  use: { 
+    ...devices['Desktop Chrome'],
+    channel: 'chrome',
+    permissions: ['clipboard-write'],
+  },
+};
+
+const config = defineConfig({
   testDir: './src',
   stopOnFirstFailure: false,
   fullyParallel: true,
@@ -16,31 +24,28 @@ module.exports = defineConfig({
   ],
   use: {
     trace: 'on-first-retry',
-    headless: false, // Set to true if you want to run tests in headless mode
+    headless: false,
     viewport: { width: 1280, height: 720 },
     actionTimeout: 0,
     ignoreHTTPSErrors: true,
   },
   projects: [
-    /*{
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },*/
     {
-      name: 'chrome',
-      use: { 
-        ...devices['Desktop Chrome'],
-        channel: 'chrome',
-        permissions: ['clipboard-write'],
-      },
+      name: 'quick2',
+      testMatch: '**/quick2.test.js',
+      use: chromeConfig.use,
     },
-    /*{
-      name: 'chromium',
-      use: { 
-        ...devices['Desktop Chrome'],
-        permissions: ['clipboard-write'],
-      },
-    },*/
+    {
+      name: 'quick',
+      testMatch: '**/quick.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'cleaner',
+      testMatch: '**/cleaner.test.js',
+      use: chromeConfig.use,
+    }
   ],
-  
 });
+
+module.exports = config;

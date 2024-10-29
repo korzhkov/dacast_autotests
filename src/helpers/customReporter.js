@@ -1,43 +1,58 @@
 const { sendToSlack } = require('./slackNotifier');
+const ResultsManager = require('./resultsManager');
 
 class CustomReporter {
-  constructor() {
+  constructor(options = {}) {
     this.testResults = {
       totalTests: 0,
       passed: 0,
       failed: 0,
       skipped: 0
     };
+    const defaultConfig = {
+      outputDir: 'test-results'
+    };
+    this.resultsManager = new ResultsManager(options.config || defaultConfig);
+    this.resultsManager.init();
   }
 
   onTestBegin(test) {
     this.testResults.totalTests++;
+    console.log(`Starting test: ${test.title}`);
   }
 
-  onTestEnd(test, result) {
+  async onTestEnd(test, result) {
+    console.log(`Test ended: ${test.title} with status ${result.status}`);
+
     if (result.status === 'passed') {
       this.testResults.passed++;
-      sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
-    } else if (result.status === 'failed') {
+      await sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
+    } else if (result.status === 'failed' || result.status === 'timedOut') {
       this.testResults.failed++;
-      const errorMessage = result.error?.message || 'Unknown error';
-      const errorStack = result.error?.stack || 'No stack trace available';
       
-      const message = `
+      let errorMessage, errorStack;
+      
+      if (result.status === 'timedOut') {
+        errorMessage = `Test timeout exceeded (${test.timeout}ms)`;
+        errorStack = `at ${test.location?.file}:${test.location?.line}`;
+      } else {
+        errorMessage = result.error?.message || 'Unknown error';
+        errorStack = result.error?.stack || 'No stack trace available';
+      }
+
+      await sendToSlack(`
 Test failed: ${test.title}
 Error: ${errorMessage}
 Stack trace:
 ${errorStack}
-      `;
-
-      sendToSlack(message, test.title, 'error');
+      `, test.title, 'error');
     } else if (result.status === 'skipped') {
       this.testResults.skipped++;
-      sendToSlack(`Test skipped: ${test.title}`, test.title, 'info');
+      await sendToSlack(`Test skipped: ${test.title}`, test.title, 'info');
     }
   }
 
-  onEnd() {
+  async onEnd() {
     const summary = `
 Test run completed.
 Total: ${this.testResults.totalTests}
@@ -46,7 +61,10 @@ Failed: ${this.testResults.failed}
 Skipped: ${this.testResults.skipped}
     `;
 
-    sendToSlack(summary, 'Test Run Summary');
+    await sendToSlack(summary, 'Test Run Summary');
+    
+    // Сохраняем результаты в отдельную папку
+    this.resultsManager.saveResults();
   }
 }
 
