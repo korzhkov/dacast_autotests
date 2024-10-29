@@ -146,12 +146,11 @@ await test.step('Validate that videos are visible in media library', async () =>
 
   await test.step('Drag and drop videos to folder', async () => {
   console.log(`Going to drag and drop video to ${folderName}`);
-  
-  // Finding the source element (video  
+    // Finding the source element (video  
     const sourceElement = page.locator('div[draggable="true"]').filter({ has: page.locator('span', { hasText: 'sample_video.MOV' }) }).first();
-
-    // Finding the target element (folder we just created)
-    const targetElement = page.locator('div.sc-fLvQuD').filter({ hasText: `${folderName}` });
+    //const targetElement = page.locator('div.sc-fLvQuD').filter({ hasText: `${folderName}` });
+    const targetElement = page.getByText(folderName);
+    
 
     // Ensuring that both elements are visible and accessible
     await expect(sourceElement).toBeVisible();
