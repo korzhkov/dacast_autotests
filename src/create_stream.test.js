@@ -26,7 +26,6 @@ test('Create stream test', async ({ page }) => {
       await page.getByRole('button', { name: 'Create' }).first().click();
     }
     
-
     await page.locator('.sc-iLLODe').first().click();
     await page.getByRole('button', { name: 'Choose advanced options' }).nth(1).click();
     const currentDate = new Date();
@@ -36,12 +35,12 @@ test('Create stream test', async ({ page }) => {
     await page.locator('div:nth-child(3) > .sc-gFAWRd > #dropdownTitle > .sc-klVQfs > .sc-gsFSXq > svg > path:nth-child(2)').click();
     
     // Validate that Adaptive bitrate 1080p Akamai Delivery is present (requirements)
-    const akamai1080 = page.getByText('Adaptive Bitrate 1080p Akamai Delivery').first();
+    const akamai1080 = page.locator('[id="streamSlotTypeDropdown_Adaptive\\ Bitrate\\ 1080p\\ Akamai\\ Delivery0"] div');
     await expect(akamai1080).toBeVisible({ timeout: 1000});
     console.log('Akamai 1080p found, continuing with the test.');
 
     //await page.locator('[id="streamSlotTypeDropdown_Standard\\ Passthrough\\ Akamai\\ Delivery3"] div').click();
-    await page.getByText('Standard Passthrough Akamai Delivery').click();
+    await page.getByText('Standard Passthrough Akamai Delivery').first().click();
     // Enable DVR
     //await page.locator('#pageContentContainer div').filter({ hasText: 'Create Live Stream Title Source Region Europe, Middle East & Africa Australia' }).locator('label').nth(1).click();
     await page.locator('xpath=//*[@id="pageContentContainer"]/div[2]/div[2]/div/div[4]/div[1]/div[1]/label').click();
