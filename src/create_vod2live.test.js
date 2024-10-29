@@ -36,10 +36,12 @@ test('Create VOD2Live stream test', async ({ page }) => {
 
   await test.step('Create VOD Stream', async () => {
     // Start the process of creating a new stream
+
     console.log('Starting VOD Stream creation process');
     await page.getByRole('button', { name: 'Add +' }).click();
     await page.getByText('Live Stream', { exact: true }).click();
-    await page.locator('.sc-fPrdXf > div:nth-child(4) > div').first().click();
+    await page.getByText('VOD to LIVE').first().click();
+
     await page.getByRole('button', { name: 'Next' }).click();
 
     console.log('Selecting video file for the stream');
