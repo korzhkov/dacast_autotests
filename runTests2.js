@@ -4,20 +4,44 @@ const config = require('./playwright.config.js');
 
 // Define valid environments
 const validEnvs = ['prod', 'stage', 'dev'];
-const env = process.argv.find(arg => validEnvs.includes(arg)) || 'prod';
+
+// Skip first two arguments (node and script path)
+const specifiedEnv = process.argv.slice(2).find(arg => 
+    !arg.startsWith('--') && validEnvs.includes(arg)
+);
+
+// If environment is specified but invalid, show error
+const invalidEnv = process.argv.slice(2).find(arg => 
+    !arg.startsWith('--') && !validEnvs.includes(arg)
+);
+
+if (invalidEnv) {
+    console.error(`[${new Date().toISOString()}] Error: Invalid environment "${invalidEnv}"`);
+    console.error(`Valid environments are: ${validEnvs.join(', ')}`);
+    console.error('Example usage: node runTests2.js prod --tests=quick2,quick --sequential');
+    process.exit(1);
+}
+
+// Use specified env or default to 'prod'
+const env = specifiedEnv || 'prod';
 
 // Get available tests from playwright config (excluding 'chrome' project)
 const availableTests = config.projects
     .map(project => project.name)
     .filter(name => name !== 'chrome');
 
+console.log(`[${new Date().toISOString()}] Available tests:`, availableTests);
+
 let testsToRun = [];
 
 // Parse command line arguments (skip node and filename)
 const args = process.argv.slice(2);
+console.log(`[${new Date().toISOString()}] Command line arguments:`, args);
+
 args.forEach(arg => {
     if (arg.startsWith('--tests=')) {
         const testParam = arg.split('=')[1];
+        console.log(`[${new Date().toISOString()}] Test parameter:`, testParam);
         
         // Check if startfrom: option is used
         if (testParam.startsWith('startfrom:')) {
@@ -30,13 +54,16 @@ args.forEach(arg => {
         } else {
             // Regular comma-separated list of tests
             const requestedTests = testParam.split(',');
+            console.log(`[${new Date().toISOString()}] Requested tests:`, requestedTests);
             testsToRun = requestedTests.filter(test => availableTests.includes(test));
+            console.log(`[${new Date().toISOString()}] Filtered tests:`, testsToRun);
         }
     }
 });
 
 // If no tests specified, run all available tests
 if (testsToRun.length === 0) {
+    console.log(`[${new Date().toISOString()}] No tests selected, running all available tests`);
     testsToRun = availableTests;
 }
 

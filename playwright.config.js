@@ -44,6 +44,56 @@ const config = defineConfig({
       name: 'cleaner',
       testMatch: '**/cleaner.test.js',
       use: chromeConfig.use,
+    },
+    {
+      name: 'chat',
+      testMatch: '**/validate_chat.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'trial',
+      testMatch: '**/validate_free_trial.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'upload',
+      testMatch: '**/upload_video.test.js', 
+      use: chromeConfig.use,
+    },
+    {
+      name: 'playlist',
+      testMatch: '**/create_playlist.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'stream',
+      testMatch: '**/create_stream.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'vod2live',
+      testMatch: '**/create_vod2live.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'folder',
+      testMatch: '**/create_folder.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'expo',
+      testMatch: '**/create_expo.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'schedule',
+      testMatch: '**/create_schedule.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'analytics',
+      testMatch: '**/validate_analytics.test.js',
+      use: chromeConfig.use,
     }
   ],
 });
