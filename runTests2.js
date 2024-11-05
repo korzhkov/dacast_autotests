@@ -78,7 +78,12 @@ async function runTests() {
     const projectFlags = testsToRun.map(test => `--project=${test}`).join(' ');
     const workers = isSequential ? '--workers=1' : '';
     
-    const command = `npx playwright test --config=playwright.config.js ${projectFlags} ${workers}`;
+    // Определяем команду в зависимости от ОС
+    const isWindows = process.platform === 'win32';
+    const command = isWindows
+        ? `npx playwright test --config=playwright.config.js ${projectFlags} ${workers}`
+        : `xvfb-run npx playwright test --config=playwright.config.js ${projectFlags} ${workers}`;
+        
     console.log(`[${new Date().toISOString()}] Running command: ${command}`);
     
     try {
