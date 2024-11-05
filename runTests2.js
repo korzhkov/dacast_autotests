@@ -74,11 +74,9 @@ async function runTests() {
     console.log(`[${new Date().toISOString()}] Starting test sequence in ${env.toUpperCase()} environment`);
     console.log(`[${new Date().toISOString()}] Running tests: ${testsToRun.join(', ')}`);
     
-    // Create project flags for each test
     const projectFlags = testsToRun.map(test => `--project=${test}`).join(' ');
     const workers = isSequential ? '--workers=1' : '';
     
-    // Определяем команду в зависимости от ОС
     const isWindows = process.platform === 'win32';
     const command = isWindows
         ? `npx playwright test --config=playwright.config.js ${projectFlags} ${workers}`
@@ -87,11 +85,22 @@ async function runTests() {
     console.log(`[${new Date().toISOString()}] Running command: ${command}`);
     
     try {
-        // Pass environment through process.env
         process.env.WORKENV = env;
-        execSync(command, { stdio: 'inherit' });
+        const output = execSync(command, { 
+            encoding: 'utf8',
+            maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+            stdio: ['pipe', 'pipe', 'pipe'] // Явно указываем каналы ввода/вывода
+        });
+        console.log(output);
+        return { success: true, output };
     } catch (error) {
         console.error(`[${new Date().toISOString()}] Error running tests:`, error);
+        return { 
+            success: false, 
+            error: error.message,
+            output: error.stdout?.toString() || '',
+            stderr: error.stderr?.toString() || ''
+        };
     }
 }
 
