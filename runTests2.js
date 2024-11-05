@@ -89,17 +89,16 @@ async function runTests() {
         const output = execSync(command, { 
             encoding: 'utf8',
             maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-            stdio: ['pipe', 'pipe', 'pipe'] // Явно указываем каналы ввода/вывода
+            stdio: 'inherit'  // Возвращаем это назад
         });
-        console.log(output);
         return { success: true, output };
     } catch (error) {
         console.error(`[${new Date().toISOString()}] Error running tests:`, error);
         return { 
             success: false, 
             error: error.message,
-            output: error.stdout?.toString() || '',
-            stderr: error.stderr?.toString() || ''
+            output: error.stdout || '',
+            stderr: error.stderr || ''
         };
     }
 }
