@@ -87,29 +87,44 @@ async function runTests() {
     
     try {
         process.env.WORKENV = env;
-        const output = execSync(command, { 
+        execSync(command, { 
             encoding: 'utf8',
             maxBuffer: 10 * 1024 * 1024,
             stdio: 'inherit'
         });
-        // Если тесты прошли успешно, возвращаем успех независимо от ошибок xvfb-run
-        return { success: true, output };
+
+        // Если дошли до этой точки без исключений, значит тесты прошли успешно
+        return { success: true };
     } catch (error) {
-        // Проверяем, действительно ли это ошибка тестов
-        if (error.status === 1 && error.stderr && error.stderr.includes('kill:')) {
-            // Если это только ошибка xvfb-run, считаем тесты успешными
-            return { success: true, output: error.stdout || '' };
+        // Проверяем вывод на наличие строки "X passed"
+        const output = error.stdout || '';
+        if (output.includes(' passed (') && !output.includes(' failed')) {
+            // Тесты прошли успешно, несмотря на ошибку xvfb
+            return { success: true };
         }
         
-        console.error(`[${new Date().toISOString()}] Error running tests:`, error);
+        // Реальная ошибка в тестах
+        console.error(`[${new Date().toISOString()}] Error running tests:`, {
+            message: error.message,
+            stdout: error.stdout,
+            stderr: error.stderr
+        });
+        
         return { 
             success: false, 
-            error: error.message,
-            output: error.stdout || '',
-            stderr: error.stderr || ''
+            error: error.message
         };
     }
 }
 
-console.log(`[${new Date().toISOString()}] Script started for ${env.toUpperCase()}`);
-runTests().catch(console.error);
+// Запускаем тесты и обрабатываем результат
+const result = runTests().catch(error => {
+    console.error('Unexpected error:', error);
+    return { success: false, error: error.message };
+});
+
+if (result.success) {
+    process.exit(0);
+} else {
+    process.exit(1);
+}
