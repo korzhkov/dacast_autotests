@@ -42,6 +42,8 @@ test('Upload video test', async ({ page }) => {
       await page.reload();
     }
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
   await page.waitForTimeout(5000);
     await test.step('Checking sample_video.MOV status', async () => {
       await page.reload();
@@ -91,6 +93,7 @@ test('Upload video test', async ({ page }) => {
         console.log('Processing did not complete after maximum attempts');
       }});
 
+
     // Find and click on the newly uploaded video
     const videoLinks = await page.$$('a[href^="/videos/"]');
     console.log(`Found ${videoLinks.length} video links`); // Debugging, might be removed
@@ -108,20 +111,9 @@ test('Upload video test', async ({ page }) => {
     expect(videoClicked).toBeTruthy();
   });
 
-/*
-
-Below comment is not actual anymore.
-
-Section above needs to be expanded to check that video transcoding is finished and only after 
-that move to the next step. Possible issues:
-- video playback may not work if transcoding is not finished
-- not sure how about download, probably should not be affected because download probably works with the source,
- but it needs to be confirmed
-
- As a workaround I will put 10s sleep before Edit video description step
-*/
   await page.waitForTimeout(10000);
   console.log('Sleep for 10s to give transcoding a chance to finish');
+  
   
 
   await test.step('Edit video description', async () => {
@@ -136,12 +128,14 @@ that move to the next step. Possible issues:
     // Verify the changes were saved successfully
     await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });
   });
+  
+  await page.getByRole('row', { filter: 'sample_video.MOV' }).getByRole('link').first().click();
 
   await test.step('Verify video download', async () => {
     let downloadStarted = false;
     const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
     
-    await page.locator('#downloadVodTooltip').getByRole('img').click();
+    await page.getByRole('button', { name: 'Download' }).click();
     
     const download = await downloadPromise;
     
@@ -172,14 +166,11 @@ that move to the next step. Possible issues:
     }
   });
 
-
+  
   await test.step('Check share link and video playback', async () => {
     // Check if the share link is present
-    
-    await page.getByRole('button', { name: 'Share links' }).click();
-    await page.locator('#link').click();
-    // await page.expect('Copied to clipboard').toBeVisible({ timeout: 10000 });
-
+    await page.getByRole('button', { name: 'Copy Share Link' }).click();
+  
     // Wait for the clipboard content to be updated
     await page.waitForTimeout(1000);
     
