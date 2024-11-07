@@ -11,12 +11,41 @@ test('Create stream test', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
 
+    await test.step('Check and remove DVR stream if present', async () => {
+    await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
+    await page.waitForTimeout(1000);
+    const dvrCell = await page.locator('role=cell[name="DVR"]');
+    const dvrCellCount = await dvrCell.count();
+
+    if (dvrCellCount > 0) {
+      console.log('DVR streams found, attempting to delete them.');
+      await dvrCell.first().click();
+
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.getByPlaceholder('Search by Title...').fill('This is a test');
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(1000);
+      await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Bulk Actions' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('list').getByText('Delete').click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Delete' }).click();
+
+      
+      console.log('DVR cell deleted.');
+      await page.waitForTimeout(10000); // Looks like DVR limits are not removed immediately, let's give it some wait  
+    } else {
+      console.log('DVR cell not found, no action needed.');
+    }
+  });
+    
   await test.step('Create Stream', async () => {
     
     // Start the process of creating a new stream
 
-    
-    await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
+    // await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
     const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
     if (createLiveStreamButton) {
@@ -104,7 +133,7 @@ test('Create stream test', async ({ page }) => {
     await page.waitForTimeout(15000);
     await page.reload();
     console.log('Reloaded the page to get the stream appeared.');
-    
+    /*
     // Delete the stream
     const streamRow = await page.locator(`#videosListTable tr`)
       .filter({ hasText: streamName })
@@ -125,6 +154,37 @@ test('Create stream test', async ({ page }) => {
     // Optional: Verify that the stream has been deleted
     await expect(page.locator(`#videosListTable`).getByText(streamName)).not.toBeVisible();
     console.log('Stream deleted, test completed.');
-     
+     */
+  });
+
+  await test.step('Check and remove DVR stream if present', async () => {
+    await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
+    await page.waitForTimeout(1000);
+    const dvrCell = await page.locator('role=cell[name="DVR"]');
+    const dvrCellCount = await dvrCell.count();
+
+    if (dvrCellCount > 0) {
+      console.log('DVR streams found, attempting to delete them.');
+      await dvrCell.first().click();
+
+      await page.getByPlaceholder('Search by Title...').click();
+      await page.getByPlaceholder('Search by Title...').fill('This is a test');
+      await page.getByPlaceholder('Search by Title...').press('Enter');
+      await page.waitForTimeout(1000);  
+      await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Bulk Actions' }).click();
+      await page.waitForTimeout(2000);
+      await page.getByRole('list').getByText('Delete').click();
+      await page.waitForTimeout(2000);
+      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.waitForTimeout(2000);
+      console.log('DVR cell deleted.');
+
+      
+    } else {
+      console.error('DVR cell not found - this is an error condition');
+      test.fail();
+    }
   });
 });
