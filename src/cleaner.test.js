@@ -18,7 +18,7 @@ test('Cleaner', async ({ page }) => {
     await page.waitForTimeout(5000);
 
     const noVideosText = await page.locator('text="Upload your first Video!"').count() > 0;
-
+        
     if (!noVideosText) {
       await page.getByPlaceholder('Search by Title...').click();
       await page.getByPlaceholder('Search by Title...').fill('sample');
@@ -33,7 +33,7 @@ test('Cleaner', async ({ page }) => {
       const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
 
       if (!noItemsFound) {
-        await page.getByRole('row', { name: 'Title Size Date Status Features' }).locator('label div').click();
+        await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
         await page.getByRole('button', { name: 'Bulk Actions' }).click();
         await page.getByRole('list').getByText('Delete').click();
         await page.getByRole('button', { name: 'Delete' }).click();
