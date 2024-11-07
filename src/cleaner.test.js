@@ -11,6 +11,7 @@ test('Cleaner', async ({ page }) => {
 
   console.log(`Running cleaner test in ${env.toUpperCase()} environment`);
 
+  
   await test.step('Clean Videos', async () => {
     await page.waitForTimeout(5000);
     await page.goto(`https://${hostLogged}/videos?perPage=100`);
@@ -160,7 +161,6 @@ await test.step('Clean Expo', async () => {
   await page.goto(`https://${hostLogged}/expos?perPage=100`);
 
   await page.waitForTimeout(5000);
-
   // Finding all rows in the table and logging the number of rows found
   const rows = await page.locator('tbody > tr').all();
   console.log(`Found ${rows.length} rows`);
@@ -171,12 +171,16 @@ await test.step('Clean Expo', async () => {
         // Hover over the row to get the delete icon visible
         await row.hover();
         
+
+        await page.getByRole('row', { name: 'This is a test expo' }).getByRole('img').first().click();
+        await page.locator('css=[id^="moreactiondropdown"][id$="_Delete"]').getByTitle('Delete').first().click();
+        
         // Wait for the delete icon (SVG) to appear
-        const deleteIcon = row.locator('svg[viewBox="0 0 24 24"]:has(path[d^="M6 19c0 1.1"])');
-        await deleteIcon.waitFor({ state: 'visible', timeout: 5000 });
+        // const deleteIcon = row.locator('svg[viewBox="0 0 24 24"]:has(path[d^="M6 19c0 1.1"])');
+        //await deleteIcon.waitFor({ state: 'visible', timeout: 5000 });
         
         // Click on the delete icon
-        await deleteIcon.click();
+        //await deleteIcon.click();
         
         // Wait for and click the delete confirmation button in the dialog
         const confirmDeleteButton = page.getByRole('button', { name: 'Delete forever' });
