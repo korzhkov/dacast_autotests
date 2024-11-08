@@ -7,7 +7,8 @@ const SLACK_CHANNEL = process.platform === 'win32' ? '#ysk_test' : '#slack-messa
 
 async function sendToSlack(message, testName, type = 'info') {
   const username = type === 'error' ? 'Test Error Bot' : 'Test Info Bot';
-  const formattedMessage = formatMessage(message, testName, type);
+  const env = (process.env.WORKENV || 'prod').toUpperCase();
+  const formattedMessage = formatMessage(message, testName, type, env);
 
   const payload = {
     token: SLACK_TOKEN,
@@ -16,7 +17,7 @@ async function sendToSlack(message, testName, type = 'info') {
     username: username,
   };
 
-  console.log(`Sending ${type} message to Slack`);
+  console.log(`Sending ${type} message to Slack for ${env} environment`);
 
   try {
     const response = await axios.post(SLACK_URL, new URLSearchParams(payload), {
@@ -28,12 +29,12 @@ async function sendToSlack(message, testName, type = 'info') {
   }
 }
 
-function formatMessage(message, testName, type) {
+function formatMessage(message, testName, type, env) {
   const emoji = type === 'error' ? ':x:' : ':information_source:';
   const header = type === 'error' ? 'Test Failed' : 'Test Info';
   
   let formattedMessage = `
-${emoji} *${header}: ${testName}*
+${emoji} *${header}: ${testName}* [${env}]
 ${message}
   `.trim();
 

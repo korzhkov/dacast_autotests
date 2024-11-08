@@ -10,8 +10,7 @@ test.beforeAll(async () => {
 test('Create stream test', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
-  await page.pause();
-  
+    
     await test.step('Check and remove DVR stream if present', async () => {
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
@@ -113,7 +112,6 @@ test('Create stream test', async ({ page }) => {
     } else {
       console.log('Live Stream Online toggle is disabled.');
     }
-    await page.pause();
     // Copy the share link
     await page.getByRole('button', { name: 'Copy Share Link' }).click();
     
