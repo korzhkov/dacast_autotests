@@ -287,7 +287,7 @@ await test.step('Temp step - open expo', async () => {
 
 
 
-  console.log('Test completed');    // Here you can add verification steps to check if the drop was successful
+  console.log('Test completed'); 
     
   });
 });

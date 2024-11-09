@@ -1,6 +1,7 @@
 const { test, expect } = require('./utils');
 require('dotenv').config();
-const host = process.env._HOST_LOGGED;
+const env = process.env.WORKENV || 'prod';
+const host = env === 'stage' ? process.env._HOST_LOGGED_STAGE : process.env._HOST_LOGGED;
 
 
 test('Validate analytics test', async ({ page }) => {
