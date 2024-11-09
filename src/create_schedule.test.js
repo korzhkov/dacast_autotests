@@ -189,10 +189,10 @@ await test.step('Temp step - open expo', async () => {
     console.log(`Going to drag and drop first video to Schedule`);
     // Added search for video to minimize chances of the failure when there is a lot of other videos in the list
     await page.getByPlaceholder('Search by Title...').click();
-    await page.getByPlaceholder('Search by Title...').fill('screen');
+    await page.getByPlaceholder('Search by Title...').fill('Sarnoff');
     await page.getByPlaceholder('Search by Title...').press('Enter');
     await page.waitForTimeout(5000); // Added timeout to ensure the search results are visible
-    const sourceElement = page.getByText('Screen Recording').first();
+    const sourceElement = page.getByText('Sarnoff').first();
     const targetElement = page.locator('.current-time');
 
     await expect(sourceElement).toBeVisible({timeout: 10000});
