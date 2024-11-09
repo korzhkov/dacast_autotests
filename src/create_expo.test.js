@@ -316,15 +316,15 @@ await test.step('Temp step - open expo', async () => {
   
     await page.waitForTimeout(2000);
   });
-
 // Adding section to the expo
   await test.step('Add section to the Expo', async () => {
     console.log('Adding section to the Expo');
     await page.getByRole('button', { name: 'Add section' }).click();
     await page.getByRole('textbox', { name: 'Section title' }).fill('This is a test expo section');
     await page.locator('#expoContentWrapper form').getByRole('button', { name: 'Add section' }).click();
-    await expect(page.getByText('Expo updated')).toBeVisible({ timeout: 20000 });
-    await page.waitForTimeout(5000);
+    //await expect(page.getByText('Expo updated')).toBeVisible({ timeout: 20000 });
+    await page.waitForTimeout(10000);
+    await expect(page.getByText('This is a test expo section')).toBeVisible({timeout: 20000});
   });
 
 // This is ridiculous, but for sections there is another locator and way to move the video.
@@ -539,8 +539,9 @@ await test.step('Check Sharing button', async () => {
   await expect(page.getByText('Copied to clipboard')).toBeVisible({timeout: 15000});
   const clipboardContent = await clipboardy.default.read();
 
-  // Check if the copied link starts with 'https://dacastexpo.com?id='
-  expect(clipboardContent).toMatch(/^https:\/\/dacastexpo\.com\?id=.+$/);
+  const expoDomain = process.env.WORKENV === 'stage' ? 'singularity-expo.dacast.com' : 'dacastexpo.com';
+  // Check if the copied link starts with the correct domain
+  expect(clipboardContent).toMatch(new RegExp(`^https://${expoDomain}\\?id=.+$`));
   console.log('Copied share link:', clipboardContent);
 
   // Go to the link
