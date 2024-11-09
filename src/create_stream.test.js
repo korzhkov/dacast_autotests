@@ -10,11 +10,11 @@ test.beforeAll(async () => {
 test('Create stream test', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
-
+    
     await test.step('Check and remove DVR stream if present', async () => {
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
-    const dvrCell = await page.locator('role=cell[name="DVR"]');
+    const dvrCell = await page.getByRole('cell', { name: 'DVR' });
     const dvrCellCount = await dvrCell.count();
 
     if (dvrCellCount > 0) {
@@ -112,7 +112,6 @@ test('Create stream test', async ({ page }) => {
     } else {
       console.log('Live Stream Online toggle is disabled.');
     }
-
     // Copy the share link
     await page.getByRole('button', { name: 'Copy Share Link' }).click();
     
@@ -123,7 +122,16 @@ test('Create stream test', async ({ page }) => {
     const clipboardContent = await clipboardy.default.read();
 
     // Check if the copied link starts with 'https://iframe.dacast.com/live/'
-    expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/live\//);
+    const env = process.env.WORKENV || 'prod';
+    
+    if (env === 'prod') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/live\//);
+    } else if (env === 'stage') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/live\//);
+    } else if (env === 'dev') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/live\//);
+    }
+    
     console.log('Copied share link:', clipboardContent);
  
     // Navigate to the Live Streams page
