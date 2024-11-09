@@ -72,7 +72,8 @@ test('Create VOD2Live stream test', async ({ page }) => {
     const clipboardContent = await clipboardy.default.read();
 
 // Check if the copied content is an Embed code with the expected structure
-    expect(clipboardContent).toMatch(/<div style="position:relative;padding-bottom:56\.25%;overflow:hidden;height:0;max-width:100%;"><iframe id="[\w-]+-live-[\w-]+" src="https:\/\/iframe\.dacast\.com\/live\/[\w-]+\/[\w-]+" width="100%" height="100%" frameborder="0" scrolling="no" allow="autoplay;encrypted-media" allowfullscreen webkitallowfullscreen mozallowfullscreen oallowfullscreen msallowfullscreen style="position:absolute;top:0;left:0;"><\/iframe><\/div>/);
+    const host = process.env.WORKENV === 'stage' ? 'iframe-dev.dacast.com' : 'iframe.dacast.com';
+    expect(clipboardContent).toMatch(new RegExp(`<div style="position:relative;padding-bottom:56\\.25%;overflow:hidden;height:0;max-width:100%;"><iframe id="[\\w-]+-live-[\\w-]+" src="https://${host}/live/[\\w-]+/[\\w-]+" width="100%" height="100%" frameborder="0" scrolling="no" allow="autoplay;encrypted-media" allowfullscreen webkitallowfullscreen mozallowfullscreen oallowfullscreen msallowfullscreen style="position:absolute;top:0;left:0;"></iframe></div>`));
     console.log('Copied Embed code:', clipboardContent);
 
     
@@ -113,7 +114,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
 
     await page.waitForSelector('text="Scheduled"', { timeout: 30000 })
     console.log('Scheduled stream found');
-
+    
     console.log('VOD2Live stream creation test completed');
   });
 
