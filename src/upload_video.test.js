@@ -178,8 +178,15 @@ test('Upload video test', async ({ page }) => {
     const clipboardContent = await clipboardy.default.read();
 
     // Check if the copied link starts with 'https://iframe.dacast.com/vod/'
-    expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/vod\//);
-    console.log('Copied share link:', clipboardContent);
+    const env = process.env.WORKENV || 'prod';
+    
+    if (env === 'prod') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/vod\//);
+    } else if (env === 'stage') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/vod\//);
+    } else if (env === 'dev') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/vod\//);
+    }
 
 
   await page.goto(clipboardContent);
