@@ -1,7 +1,7 @@
 const { test, expect } = require('./utils');
 const { getEnvVars } = require('./helpers/envHelper');
 
-// Получаем окружение из параметра командной строки --workenv=xxx
+// Get the environment from the command line parameter --workenv=xxx
 const workenvArg = process.argv.find(arg => arg.startsWith('--workenv='));
 const env = workenvArg ? workenvArg.split('=')[1] : (process.env.WORKENV || 'prod');
 

@@ -285,7 +285,7 @@ await test.step('Temp step - open expo', async () => {
   
       // Validate with retry logic
       const validateAddition = async () => {
-        await page.waitForTimeout(1000); // Дать время на обновление интерфейса
+        await page.waitForTimeout(1000); // Give time for the interface to update
 
         const secondVideoAdded = await page.locator('#expoContentWrapper .sc-gEvEer')
           .filter({ hasText: 'sample_video2.MOV' })

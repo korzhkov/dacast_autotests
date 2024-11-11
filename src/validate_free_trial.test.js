@@ -148,7 +148,7 @@ test('Dacast free trial test', async ({ page }) => {
       console.log('Woclome message is visible');
     } catch (error) {
       console.error('Test did not complete: Welcome is not visible');
-      test.fail();  // Помечает шаг как неудачный
+      test.fail();
       testFailed = true;
     }
   });

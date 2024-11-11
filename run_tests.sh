@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# Настраиваем логирование
+# Configure logging
 exec 1> >(tee -a "/home/ec2-user/cron_tests.log") 2>&1
 
 echo "=== Test run started at $(date) ==="
 echo "Current user: $(whoami)"
 echo "Current directory before cd: $(pwd)"
 
-# Переходим в директорию скрипта
+# Change to the script directory
 cd "$(dirname "$0")"
 echo "Changed directory to: $(pwd)"
 
-# Проверяем переменные окружения
+# Check environment variables
 echo "PATH: $PATH"
 echo "NODE_PATH: $NODE_PATH"
 echo "NVM_DIR: $NVM_DIR"
 
-# Загружаем NVM
+# Load NVM
 echo "Loading NVM..."
 export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
@@ -26,22 +26,22 @@ else
     echo "ERROR: NVM script not found at $NVM_DIR/nvm.sh"
 fi
 
-# Проверяем доступность nvm
+# Check NVM availability
 echo "Checking NVM..."
 which nvm || echo "NVM not found in PATH"
 
-# Переключаем версию Node
+# Switch to Node 16
 echo "Switching to Node 16..."
 nvm use 16 || echo "Failed to switch to Node 16"
 
-# Проверяем версию Node
+# Check Node version
 echo "Current Node version: $(node -v || echo 'Node not found')"
 
-# Проверяем наличие xvfb
+# Check xvfb availability
 echo "Checking xvfb..."
 which xvfb-run || echo "xvfb-run not found"
 
-# Запускаем тесты
+# Start tests
 echo "Starting tests..."
 xvfb-run node runTests2.js prod --sequential
 
