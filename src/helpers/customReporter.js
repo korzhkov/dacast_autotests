@@ -1,109 +1,149 @@
 const { sendToSlack } = require('./slackNotifier');
 const ResultsManager = require('./resultsManager');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Custom reporter for Playwright tests that tracks test execution and sends notifications
- * Implements the Reporter API interface from Playwright
  */
 class CustomReporter {
-  /**
-   * Initialize reporter with optional configuration
-   * @param {Object} options - Reporter configuration options
-   */
-  constructor(options = {}) {
-    // Track test execution statistics
-    this.testResults = {
-      totalTests: 0,
-      passed: 0,
-      failed: 0,
-      skipped: 0
-    };
+    constructor(options = {}) {
+        this.config = require('../../playwright.config.js');
+        this.testResults = { passed: 0, failed: 0, skipped: 0 };
+        
+        const defaultConfig = { outputDir: 'test-results' };
+        this.resultsManager = new ResultsManager(options.config || defaultConfig);
+        this.resultsManager.init();
 
-    // Set default configuration for results storage
-    const defaultConfig = {
-      outputDir: 'test-results'
-    };
+        // Get environment from process.env
+        this.environment = process.env.WORKENV || 'prod';
+        
+        // Create status file directory if it doesn't exist
+        this.statusFilePath = path.join('results', this.environment);
+        if (!fs.existsSync(this.statusFilePath)) {
+            fs.mkdirSync(this.statusFilePath, { recursive: true });
+        }
 
-    // Initialize results manager with provided or default config
-    this.resultsManager = new ResultsManager(options.config || defaultConfig);
-    this.resultsManager.init();
-  }
+        // Set full path to status file
+        this.statusFile = path.join(this.statusFilePath, 'test-status.json');
 
-  /**
-   * Called when a test starts running
-   * @param {Object} test - Test information object from Playwright
-   */
-  onTestBegin(test) {
-    this.testResults.totalTests++;
-    console.log(`Starting test: ${test.title}`);
-  }
-
-  /**
-   * Called when a test finishes running
-   * Sends appropriate Slack notifications based on test result
-   * @param {Object} test - Test information object
-   * @param {Object} result - Test result object containing status and error details
-   */
-  async onTestEnd(test, result) {
-    console.log(`Test ended: ${test.title} with status ${result.status}`);
-
-    // Handle successful test completion
-    if (result.status === 'passed') {
-      this.testResults.passed++;
-      await sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
-    } 
-    // Handle test failures and timeouts
-    else if (result.status === 'failed' || result.status === 'timedOut') {
-      this.testResults.failed++;
-      
-      let errorMessage, errorStack;
-      
-      // Special handling for timeout failures
-      if (result.status === 'timedOut') {
-        errorMessage = `Test timeout exceeded (${test.timeout}ms)`;
-        errorStack = `at ${test.location?.file}:${test.location?.line}`;
-      } 
-      // Handle other types of failures
-      else {
-        errorMessage = result.error?.message || 'Unknown error';
-        errorStack = result.error?.stack || 'No stack trace available';
-      }
-
-      // Send detailed error information to Slack
-      await sendToSlack(`
-Test failed: ${test.title}
-Error: ${errorMessage}
-Stack trace:
-${errorStack}
-      `, test.title, 'error');
-    } 
-    // Handle skipped tests
-    else if (result.status === 'skipped') {
-      this.testResults.skipped++;
-      await sendToSlack(`Test skipped: ${test.title}`, test.title, 'info');
+        // Initialize status file for selected tests
+        this.initializeStatusFile();
     }
-  }
 
-  /**
-   * Called when all tests have finished running
-   * Sends summary to Slack and saves final results
-   */
-  async onEnd() {
-    // Prepare summary of all test results
-    const summary = `
-Test run completed.
-Total: ${this.testResults.totalTests}
+    initializeStatusFile() {
+        try {
+            const testsToRun = JSON.parse(process.env.TESTS_TO_RUN || '[]');
+            const initialStatuses = {
+                _meta: {
+                    created: new Date().toISOString(),
+                    lastUpdate: new Date().toISOString(),
+                    environment: this.environment
+                }
+            };
+            
+            testsToRun.forEach(test => {
+                initialStatuses[test] = {
+                    status: 'pending',
+                    startTime: null,
+                    endTime: null,
+                    duration: null
+                };
+            });
+            
+            fs.writeFileSync(this.statusFile, JSON.stringify(initialStatuses, null, 2));
+        } catch (error) {
+            console.error('Error initializing test statuses:', error);
+        }
+    }
+
+    async onTestBegin(test) {
+        try {
+            const testFile = path.basename(test.location.file);
+            const testName = this.getTestName(testFile);
+            
+            console.log(`[${new Date().toISOString()}] Starting test: ${testName}`);
+            
+            const statuses = JSON.parse(fs.readFileSync(this.statusFile, 'utf8'));
+            
+            if (!statuses[testName]) {
+                console.error(`[${new Date().toISOString()}] Test ${testName} not found in status file`);
+                return;
+            }
+
+            statuses._meta.lastUpdate = new Date().toISOString();
+            statuses[testName] = {
+                status: 'running',
+                startTime: new Date().toISOString(),
+                endTime: null,
+                duration: null
+            };
+
+            fs.writeFileSync(this.statusFile, JSON.stringify(statuses, null, 2));
+        } catch (error) {
+            console.error(`[${new Date().toISOString()}] Error in onTestBegin:`, error);
+        }
+    }
+
+    async onTestEnd(test, result) {
+        try {
+            const testFile = path.basename(test.location.file);
+            const testName = this.getTestName(testFile);
+            
+            const statuses = JSON.parse(fs.readFileSync(this.statusFile, 'utf8'));
+            const startTime = statuses[testName].startTime;
+            const endTime = new Date().toISOString();
+            
+            const duration = startTime ? 
+                `${((new Date(endTime)).getTime() - (new Date(startTime)).getTime()) / 1000}s` : 
+                null;
+
+            statuses[testName] = {
+                status: result.status,
+                startTime,
+                endTime,
+                duration
+            };
+
+            fs.writeFileSync(this.statusFile, JSON.stringify(statuses, null, 2));
+
+            if (result.status === 'passed') {
+                this.testResults.passed++;
+                await sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
+            } else if (result.status === 'failed' || result.status === 'timedOut') {
+                this.testResults.failed++;
+                await sendToSlack(`Test failed: ${test.title}`, test.title, 'error');
+            }
+        } catch (error) {
+            console.error(`[${new Date().toISOString()}] Error in onTestEnd:`, error);
+        }
+    }
+
+    async onEnd() {
+        const summary = `Test run completed.
+Total: ${this.testResults.passed + this.testResults.failed + this.testResults.skipped}
 Passed: ${this.testResults.passed}
 Failed: ${this.testResults.failed}
-Skipped: ${this.testResults.skipped}
-    `;
+Skipped: ${this.testResults.skipped}`;
 
-    // Send final summary to Slack
-    await sendToSlack(summary, 'Test Run Summary');
-    
-    // Save test results to filesystem using ResultsManager
-    this.resultsManager.saveResults();
-  }
+        await sendToSlack(summary, 'Test Run Summary');
+        this.resultsManager.saveResults();
+    }
+
+    getTestName(testFile) {
+        let testName = testFile.replace('.test.js', '');
+        
+        const project = this.config.projects.find(p => {
+            if (!p.testMatch) return false;
+            const patterns = Array.isArray(p.testMatch) ? p.testMatch : [p.testMatch];
+            return patterns.some(pattern => {
+                const cleanPattern = pattern.replace(/\*\*\/|\*/g, '');
+                return testName === cleanPattern.replace('.test.js', '');
+            });
+        });
+
+        return project ? project.name : testName;
+    }
 }
 
 module.exports = CustomReporter;

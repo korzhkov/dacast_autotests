@@ -75,6 +75,9 @@ async function runTests() {
     console.log(`[${new Date().toISOString()}] Starting test sequence in ${env.toUpperCase()} environment`);
     console.log(`[${new Date().toISOString()}] Running tests: ${testsToRun.join(', ')}`);
     
+    // Добавляем список тестов в переменные окружения
+    process.env.TESTS_TO_RUN = JSON.stringify(testsToRun);
+    
     const projectFlags = testsToRun.map(test => `--project=${test}`).join(' ');
     const workers = isSequential ? '--workers=1' : '';
     
