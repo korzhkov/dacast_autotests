@@ -18,7 +18,7 @@ const invalidEnv = process.argv.slice(2).find(arg =>
 if (invalidEnv) {
     console.error(`[${new Date().toISOString()}] Error: Invalid environment "${invalidEnv}"`);
     console.error(`Valid environments are: ${validEnvs.join(', ')}`);
-    console.error('Example usage: node runTests2.js prod --tests=quick2,quick --sequential');
+    console.error('Example usage: node runTests2.js prod --tests=chat,trial --sequential');
     process.exit(1);
 }
 

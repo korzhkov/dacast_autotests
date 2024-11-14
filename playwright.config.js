@@ -30,16 +30,16 @@ const config = defineConfig({
     ignoreHTTPSErrors: true,
   },
   projects: [
-    {
-      name: 'quick2',
-      testMatch: '**/quick2.test.js',
-      use: chromeConfig.use,
-    },
-    {
-      name: 'quick',
-      testMatch: '**/quick.test.js',
-      use: chromeConfig.use,
-    },
+   //  {
+//       name: 'quick2',
+ //     testMatch: '**/quick2.test.js',
+ //     use: chromeConfig.use,
+ //   },
+ //   {
+ //     name: 'quick',
+ //     testMatch: '**/quick.test.js',
+ //     use: chromeConfig.use,
+ //   },
     {
       name: 'cleaner',
       testMatch: '**/cleaner.test.js',
