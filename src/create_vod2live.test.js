@@ -66,7 +66,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
     await page.getByRole('button', { name: 'Copy iFrame Embed Code' }).click();
     
     // Wait for the clipboard content to be updated
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
 
     // Get the clipboard content
     const clipboardContent = await clipboardy.default.read();
