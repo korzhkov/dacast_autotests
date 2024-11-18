@@ -1,6 +1,17 @@
 const { test, expect } = require('@playwright/test');
 require('dotenv').config();
 
+// Get host based on environment
+const env = process.env.WORKENV || 'prod';
+let host;
+if (env === 'stage') {
+  host = process.env._HOST_STAGE;
+} else if (env === 'dev') {
+  host = process.env._HOST_DEV;
+} else {
+  host = process.env._HOST;
+}
+
 // Lists of first names and last names
 const firstNames = [
   'John', 'Alice', 'Michael', 'Emma', 'David', 'Olivia', 'William', 'Sophia', 'James', 'Ava',
@@ -58,14 +69,13 @@ function generateUSPhoneNumber() {
 }
 
 test('Dacast free trial test', async ({ page }) => {
-  const host = process.env._HOST;
   test.setTimeout(180000); // Increase the overall test timeout to 3 minutes
 
   console.log('Starting test');
 
   await test.step('Navigate to Free Trial page', async () => {
     try {
-      await page.goto(`https://www.${host}/signup?autotest=true`, { 
+      await page.goto(`https://${host}/signup?autotest=true`, { 
         waitUntil: 'domcontentloaded', 
         timeout: 120000 
       });
@@ -78,7 +88,8 @@ test('Dacast free trial test', async ({ page }) => {
   });
 
 
-  await page.goto(`https://www.${host}/signup?autotest=true`);
+  await page.goto(`https://${host}/signup?autotest=true`);
+  console.log('Another page load');
   await page.waitForTimeout(5000);
 
   await test.step('Fill out the Free Trial form', async () => {

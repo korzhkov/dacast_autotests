@@ -314,13 +314,15 @@ await test.step('Temp step - open expo', async () => {
 
     }
   
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
   });
 // Adding section to the expo
   await test.step('Add section to the Expo', async () => {
     console.log('Adding section to the Expo');
     await page.getByRole('button', { name: 'Add section' }).click();
+    await page.waitForTimeout(1000);
     await page.getByRole('textbox', { name: 'Section title' }).fill('This is a test expo section');
+    await page.waitForTimeout(1000);
     await page.locator('#expoContentWrapper form').getByRole('button', { name: 'Add section' }).click();
     //await expect(page.getByText('Expo updated')).toBeVisible({ timeout: 20000 });
     await page.waitForTimeout(10000);
@@ -539,7 +541,14 @@ await test.step('Check Sharing button', async () => {
   await expect(page.getByText('Copied to clipboard')).toBeVisible({timeout: 15000});
   const clipboardContent = await clipboardy.default.read();
 
-  const expoDomain = process.env.WORKENV === 'stage' ? 'singularity-expo.dacast.com' : 'dacastexpo.com';
+  let expoDomain;
+  if (process.env.WORKENV === 'stage') {
+    expoDomain = 'singularity-expo.dacast.com';
+  } else if (process.env.WORKENV === 'dev') {
+    expoDomain = 'inflaton-expo.dacast.com';
+  } else {
+    expoDomain = 'dacastexpo.com';
+  }
   // Check if the copied link starts with the correct domain
   expect(clipboardContent).toMatch(new RegExp(`^https://${expoDomain}\\?id=.+$`));
   console.log('Copied share link:', clipboardContent);

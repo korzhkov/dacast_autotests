@@ -185,7 +185,7 @@ test('Upload video test', async ({ page }) => {
     } else if (env === 'stage') {
       expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/vod\//);
     } else if (env === 'dev') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/vod\//);
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-testing\.dacast\.com\/vod\//);
     }
 
 
