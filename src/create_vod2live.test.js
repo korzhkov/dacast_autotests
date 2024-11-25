@@ -62,11 +62,18 @@ test('Create VOD2Live stream test', async ({ page }) => {
     await page.getByRole('button', { name: 'Create', exact: true }).first().click();
 
     await page.waitForTimeout(10000); // Pause to avoid race condition with different test which used clipboardy
+    
+    // Take a screenshot after stream creation for debugging
+    console.log('Taking screenshot of the stream creation result');
+    await page.screenshot({ 
+      path: `./test-results/vod2live-stream-creation-${new Date().toISOString().replace(/[:.]/g, '-')}.png`,
+      fullPage: true 
+    });
     // Copy the share link
     await page.getByRole('button', { name: 'Copy iFrame Embed Code' }).click();
     
     // Wait for the clipboard content to be updated
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(4000);
 
     // Get the clipboard content
     const clipboardContent = await clipboardy.default.read();
