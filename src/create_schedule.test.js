@@ -238,7 +238,7 @@ await test.step('Temp step - open expo', async () => {
     await page.waitForTimeout(1000);
     await page.getByRole('button', { name: '+', exact: true }).click();
     await page.waitForTimeout(1000);
-    await page.locator('#calendarGrid').getByText('Screen Recording').click();
+    await page.locator('#calendarGrid').getByText('Sarnoff').click();
     await page.waitForTimeout(1000);
 
     console.log('Clicked on the event in calendar to adjust event start time');
