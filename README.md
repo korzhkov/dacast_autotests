@@ -182,52 +182,70 @@ The following tests are currently implemented:
   </ul>
 </li>
 <li>Click the "Sign up free" button</li>
-<li>[Pending] Bypass reCAPTCHA verification (to be implemented)</li>
-<li>[Pending] Confirm successful free trial registration (to be implemented once reCAPTCHA bypass is available)</li>
+<li>Bypass reCAPTCHA verification</li>
+<li>Confirm successful free trial registration</li>
 </ul>
 
 <h3>Cleaner:</h3>
 
-Going step by step and cleaning up the platform from the test videos/streams/folders/playlists/expos and schedulers, **including trash folder**. Temporary it's not deleting long videos required for Schedule test. If you run all tests it will be run first by default and takes about 2 minutes. If you want to avoid it then run _xvfb-run npm run test:all:startfrom -- test:analytics_
+Going step by step and cleaning up the platform from the test videos/streams/folders/playlists/expos and schedulers, **including trash folder**. Temporary it's not deleting long videos required for Schedule test. If you run all tests it will be run first by default and takes about 2 minutes.
 
 <h3>Environment Variables:</h3>
-<p>Create a `.env` file in the project root with the following variables:</p>
+<p>Create a `.env` file in the project root with the following variables. Different environments (prod/stage/dev) require different sets of variables:</p>
+
+<h4>Production Environment:</h4>
 <ul>
 <li>_HOST: The base URL of the Dacast application</li>
 <li>_HOST_LOGGED: The URL for logged-in users</li>
-<li>_EMAIL: Email for login</li>
+<li>_USERNAME: Email for login</li>
 <li>_PASSWORD: Password for login</li>
 <li>_SLACK_TOKEN: Slack token for notifications</li>
 </ul>
 
+<h4>Staging Environment:</h4>
+<ul>
+<li>_HOST_STAGE: The base URL of the staging environment</li>
+<li>_HOST_LOGGED_STAGE: The URL for logged-in users in staging</li>
+<li>_USERNAME_STAGE: Email for staging login</li>
+<li>_PASSWORD_STAGE: Password for staging login</li>
+<li>_BASIC_AUTH_STAGE_USER: Basic auth username for staging</li>
+<li>_BASIC_AUTH_STAGE_PASSWORD: Basic auth password for staging</li>
+</ul>
+
+<h4>Development Environment:</h4>
+<ul>
+<li>_HOST_DEV: The base URL of the development environment</li>
+<li>_HOST_LOGGED_DEV: The URL for logged-in users in development</li>
+<li>_USERNAME_DEV: Email for development login</li>
+<li>_PASSWORD_DEV: Password for development login</li>
+<li>_BASIC_AUTH_DEV_USER: Basic auth username for development</li>
+<li>_BASIC_AUTH_DEV_PASSWORD: Basic auth password for development</li>
+</ul>
+
+<h3>Environment-Specific Behaviors:</h3>
+<ul>
+<li>Different iframe domains are used for different environments:
+  <ul>
+    <li>Production: iframe.dacast.com</li>
+    <li>Staging: iframe-dev.dacast.com</li>
+    <li>Development: iframe-test.dacast.com</li>
+  </ul>
+</li>
+<li>Basic authentication is required for stage and dev environments but not for production</li>
+<li>Expo domains vary by environment:
+  <ul>
+    <li>Production: dacastexpo.com</li>
+    <li>Staging: singularity-expo.dacast.com</li>
+    <li>Development: inflaton-expo.dacast.com</li>
+  </ul>
+</li>
+</ul>
+
 **How to run:**<br>
 
-Update host and credentials in the env file. Then do following:<br>
-
-Validate Analytics: _xvfb-run npm run test:analytics_<br>
-Upload Video: _xvfb-run npm run test:upload_<br>
-Create Playlist: _xvfb-run npm run test:playlist_<br>
-Create Expo: _xvfb-run npm run test:expo_<br>
-Create Schedule: _xvfb-run npm run test:schedule_<br>
-Create Folder: _xvfb-run npm run test:folder_<br>
-Create Stream: _xvfb-run npm run test:stream_<br>
-Create VOD2Live stream: _xvfb-run npm run test:vod2live_<br>
-Validate Free Trial: _xvfb-run npm run test:trial_<br>
-Chat and GDPR banner test: _xvfb-run npm run test:chat_<br>
-
-To run all tests one by one: _xvfb-run npm run test:all_<br>
-
-There is an option to run a sequesnce of tests starting from a specific test: _xvfb-run npm run test:all:startfrom -- test:schedule_ - this will run all tests starting from Schedule test.
+Removed list of commands, just go to dashboard, select environment and list of tests and click a "Run Selected Tests" button
 
 
 **How to see the report:**<br>
-_npx playwright show-report_
 
-<h3>Known issues:</h3>
-<ul>
-  <li>Sometimes video_sample2.MOV is not found in create folder test if there were a lot of tests run before. Need to ustilize search functionality to find the video.</li>
-  <li>The same happens in the Expo sometimes, so cleaner is needed.</li>
-  <li>Slack notifications works fine for errors, but info messages kind of weird so far, had no time to debug it.</li>
-  <li>Need an option to skip some tests e.g. now VOD2Live stream doesn't work and would be nice to have such option in the command line.</li>
-</ul>
-
+All useful information, including console and error messages, is on the dashboard.
