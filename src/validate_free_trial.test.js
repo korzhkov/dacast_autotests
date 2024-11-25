@@ -96,6 +96,19 @@ test('Dacast free trial test', async ({ page }) => {
     console.log('Filling out the form');
 
     await page.getByLabel('Email').click();
+    // This line generates a random email address in the format: yk_XXXXXX@domain where X is either:
+    // 1. A random lowercase letter (a-z) if Math.random() < 0.5
+    // 2. A random digit (0-9) if Math.random() >= 0.5
+    // 
+    // Breaking it down:
+    // - Array(6).fill() creates array of 6 empty elements
+    // - .map() transforms each element using the random generator function
+    // - Math.random() < 0.5 gives 50/50 chance of letter vs number
+    // - String.fromCharCode(97 + Math.random() * 26) generates random lowercase letter
+    //   (97 is ASCII for 'a', adding random 0-25 gives a-z)
+    // - Math.floor(Math.random() * 10) generates random digit 0-9
+    // - .join('') combines the 6 random chars into a single string
+    // - Prefixed with 'yk_' and suffixed with @randomDomain
     await page.getByLabel('Email').fill(`yk_${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@${randomDomain}`);
     
 
