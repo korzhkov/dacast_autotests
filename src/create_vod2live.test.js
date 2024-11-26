@@ -64,9 +64,24 @@ test('Create VOD2Live stream test', async ({ page }) => {
     await page.waitForTimeout(10000); // Pause to avoid race condition with different test which used clipboardy
     
     // Take a screenshot after stream creation for debugging
+
+    console.log('Current working directory:', process.cwd());
+  console.log('Current user:', require('os').userInfo().username);
+
     console.log('Taking screenshot of the stream creation result');
+    const screenshotDir = process.env.SCREENSHOT_DIR || './test-results';
+    
+    // Создаем директорию, если она не существует
+    const fs = require('fs');
+    if (!fs.existsSync(screenshotDir)) {
+      fs.mkdirSync(screenshotDir, { recursive: true });
+    }
+    
+    const screenshotPath = `${screenshotDir}/vod2live-stream-creation-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+    console.log(`Saving screenshot to: ${screenshotPath}`);
+    
     await page.screenshot({ 
-      path: `./test-results/vod2live-stream-creation-${new Date().toISOString().replace(/[:.]/g, '-')}.png`,
+      path: screenshotPath,
       fullPage: true 
     });
     // Copy the share link
