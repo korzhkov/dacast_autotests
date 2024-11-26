@@ -69,9 +69,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
   console.log('Current user:', require('os').userInfo().username);
 
     console.log('Taking screenshot of the stream creation result');
-    const screenshotDir = process.env.SCREENSHOT_DIR || './test-results';
-    
-    // Создаем директорию, если она не существует
+    const screenshotDir = './historical-screenshots';
     const fs = require('fs');
     if (!fs.existsSync(screenshotDir)) {
       fs.mkdirSync(screenshotDir, { recursive: true });
