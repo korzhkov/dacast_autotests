@@ -62,11 +62,19 @@ test('Create VOD2Live stream test', async ({ page }) => {
 
     // Server time from response headers
     try {
-      const response = await page.request.get(page.url());
-      const serverDate = response.headers()['date'];
-      console.log('\nServer Time from Headers:', serverDate);
+      console.log('\nTrying to fetch server time...');
+      const response = await page.request.get(`${page.url()}?nocache=${Date.now()}`);
+      const headers = response.headers();
+      console.log('All headers:', headers);  // Добавим вывод всех заголовков
+      const serverDate = headers['date'];
+      if (serverDate) {
+        console.log('\nServer Time from Headers:', serverDate);
+      } else {
+        console.log('\nNo date header found in response');
+      }
     } catch (error) {
-      console.log('Unable to fetch server time from headers:', error.message);
+      console.log('\nERROR fetching server time:', error.message);
+      console.log('Error details:', error);
     }
 
     // Any time elements from the page
