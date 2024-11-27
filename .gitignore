@@ -145,6 +145,7 @@ playwright-report/
 test-results/
 test-reports/
 results/
+historical-screenshots/
 
 #Misc
 scripts/

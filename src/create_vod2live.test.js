@@ -32,7 +32,61 @@ test('Create VOD2Live stream test', async ({ page }) => {
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
   });
 
+  await test.step('Collect time information', async () => {
+    console.log('\n=== Time Information Collection ===');
+    
+    // Browser-side time information
+    const browserTimeInfo = await page.evaluate(() => ({
+      localTime: new Date().toString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezoneOffset: new Date().getTimezoneOffset(),
+      dateTimeFormat: new Intl.DateTimeFormat().format(new Date()),
+      timeZoneSupport: 'Intl' in window && 'DateTimeFormat' in window.Intl,
+      performanceTiming: performance.timing.toJSON(),
+      isDST: new Date().toString().match(/\((.+)\)/)[1].includes('Daylight'),
+    }));
+    
+    console.log('Browser Time Information:');
+    console.log(JSON.stringify(browserTimeInfo, null, 2));
 
+    // System (Node.js) time information
+    const systemInfo = {
+      nodeTime: new Date().toString(),
+      nodeTimezone: process.env.TZ,
+      tzOffset: new Date().getTimezoneOffset(),
+      locale: process.env.LANG || process.env.LANGUAGE || process.env.LC_ALL,
+    };
+    
+    console.log('\nSystem Time Information:');
+    console.log(JSON.stringify(systemInfo, null, 2));
+
+    // Server time from response headers
+    try {
+      const response = await page.request.get(page.url());
+      const serverDate = response.headers()['date'];
+      console.log('\nServer Time from Headers:', serverDate);
+    } catch (error) {
+      console.log('Unable to fetch server time from headers:', error.message);
+    }
+
+    // Any time elements from the page
+    const timestamps = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('time[datetime], [data-timestamp]'))
+        .map(el => ({
+          datetime: el.getAttribute('datetime') || el.getAttribute('data-timestamp'),
+          text: el.textContent
+        }));
+    });
+    
+    if (timestamps.length > 0) {
+      console.log('\nPage Timestamps:');
+      console.log(JSON.stringify(timestamps, null, 2));
+    } else {
+      console.log('\nNo timestamp elements found on the page');
+    }
+    
+    console.log('\n=== End of Time Information ===\n');
+  });
 
   await test.step('Create VOD Stream', async () => {
     // Start the process of creating a new stream
@@ -65,7 +119,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
     
     // Take a screenshot after stream creation for debugging
 
-    console.log('Current working directory:', process.cwd());
+  console.log('Current working directory:', process.cwd());
   console.log('Current user:', require('os').userInfo().username);
 
     console.log('Taking screenshot of the stream creation result');
