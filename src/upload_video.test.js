@@ -90,6 +90,26 @@ test('Upload video test', async ({ page }) => {
       }
 
       if (!processingComplete) {
+
+    // Take a screenshot after video processing
+    console.log('Current working directory:', process.cwd());
+    console.log('Current user:', require('os').userInfo().username);
+  
+      console.log('Taking screenshot of the stream creation result');
+      const screenshotDir = './historical-screenshots';
+      const fs = require('fs');
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+      
+      const screenshotPath = `${screenshotDir}/upload-video-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      console.log(`Saving screenshot to: ${screenshotPath}`);
+      
+      await page.screenshot({ 
+        path: screenshotPath,
+        fullPage: true 
+      });
+
         console.log('Processing did not complete after maximum attempts');
       }});
 
