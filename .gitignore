@@ -153,3 +153,10 @@ scripts/
 # Docker
 Dockerfile
 
+# Node.js related
+node/
+npm/
+
+# System files
+nohup.out
+
