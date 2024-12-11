@@ -94,8 +94,34 @@ test('Validate analytics test', async ({ page }) => {
     // There is two options to export data: CSV and XLS, we randomly choose one.
     const exportOptions = ['Export CSV', 'Export XLS'];
     const randomOption = exportOptions[Math.floor(Math.random() * exportOptions.length)];
-    await page.getByRole('button', { name: randomOption }).click();
-    console.log(`Clicked on ${randomOption} button`);
+    try {
+        const exportButton = await page.getByRole('button', { name: randomOption });
+        await exportButton.waitFor({ state: 'visible', timeout: 15000 }); // 15 second timeout to find the button
+        await exportButton.click();
+        console.log(`Clicked on ${randomOption} button`);
+    } catch (error) {
+        console.error('Error clicking export button:', error);
+        // Log the current URL when export fails
+        const currentUrl = page.url();
+        console.log(`Current URL when export failed: ${currentUrl}`);
+        // Take a screenshot for debugging
+        console.log('Taking screenshot of the failed export button click');
+        const screenshotDir = './historical-screenshots';
+        const fs = require('fs');
+        if (!fs.existsSync(screenshotDir)) {
+            fs.mkdirSync(screenshotDir, { recursive: true });
+        }
+        
+        const screenshotPath = `${screenshotDir}/analytics-export-failed-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+        console.log(`Saving screenshot to: ${screenshotPath}`);
+        
+        await page.screenshot({ 
+            path: screenshotPath,
+            fullPage: true 
+        });
+
+        throw error; // Re-throw the error to fail the test
+    }
     
     const download = await downloadPromise;
     

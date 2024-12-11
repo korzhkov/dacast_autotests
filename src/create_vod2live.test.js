@@ -65,7 +65,7 @@ test('Create VOD2Live stream test', async ({ page }) => {
       console.log('\nTrying to fetch server time...');
       const response = await page.request.get(`${page.url()}?nocache=${Date.now()}`);
       const headers = response.headers();
-      console.log('All headers:', headers);  // Добавим вывод всех заголовков
+      console.log('All headers:', headers);  // Adding all headers to the log
       const serverDate = headers['date'];
       if (serverDate) {
         console.log('\nServer Time from Headers:', serverDate);

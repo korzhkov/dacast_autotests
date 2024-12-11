@@ -168,10 +168,27 @@ test('Dacast free trial test', async ({ page }) => {
   await page.waitForTimeout(5000);
   await test.step('Validate Dashboard', async () => {
     try {
-      await expect(page.getByText(/Welcome, .+!/)).toBeVisible({ timeout: 20000 });
-      console.log('Woclome message is visible');
+      await expect(page.getByText(/Wellcome, .+!/)).toBeVisible({ timeout: 20000 });
+      console.log('Welcome message is visible');
     } catch (error) {
       console.error('Test did not complete: Welcome is not visible');
+      
+      // Take a screenshot for debugging
+      console.log('Taking screenshot of the failed welcome message validation');
+      const screenshotDir = './historical-screenshots';
+      const fs = require('fs');
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+      
+      const screenshotPath = `${screenshotDir}/free-trial-welcome-failed-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      console.log(`Saving screenshot to: ${screenshotPath}`);
+      
+      await page.screenshot({ 
+        path: screenshotPath,
+        fullPage: true 
+      });
+
       test.fail();
       testFailed = true;
     }

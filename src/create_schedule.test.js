@@ -259,12 +259,38 @@ await test.step('Temp step - open expo', async () => {
 
   await test.step('Test even preview', async () => {
 
-    console.log('Now we should wait 45 seconds before click to Preview button');
-    await page.waitForTimeout(45000);
+    console.log('Now we should wait 50 seconds before click to Preview button');
+    await page.waitForTimeout(50000);
     await page.getByRole('button', { name: 'Preview' }).click();
     await page.waitForTimeout(10000);
     
-    await page.getByRole('button', { name: 'Play' }).first().click();
+    try {
+      const playButton = await page.getByRole('button', { name: 'Play' }).first();
+      await playButton.waitFor({ state: 'visible', timeout: 15000 }); // 15 second timeout to find the button
+      await playButton.click();
+    } catch (error) {
+      console.error('Error clicking Play button:', error);
+      
+      // Take a screenshot for debugging
+      console.log('Taking screenshot of the failed play button click');
+      const screenshotDir = './historical-screenshots';
+      const fs = require('fs');
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+      
+      const screenshotPath = `${screenshotDir}/schedule-play-failed-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      console.log(`Saving screenshot to: ${screenshotPath}`);
+      
+      await page.screenshot({ 
+        path: screenshotPath,
+        fullPage: true 
+      });
+
+      throw error; // Re-throw the error to fail the test
+    }
+
+    
     await page.waitForTimeout(2000);
 
     const videoElement = await page.$('video');
