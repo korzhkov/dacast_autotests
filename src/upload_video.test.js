@@ -12,7 +12,7 @@ test('Upload video test', async ({ page }) => {
   test.setTimeout(500000);
 
   await test.step('Upload video', async () => {
-    await uploadVideo(page, 'sample_video.MOV');
+    await uploadVideo(page, 'sample_video.MOV', clipboardy);
   });
 
   await test.step('Verify uploaded video', async () => {
@@ -52,7 +52,7 @@ test('Upload video test', async ({ page }) => {
       let processingComplete = false;
 
       while (attempts < maxAttempts && !processingComplete) {
-        console.log(`Attempt ${attempts + 1}: Refreshing page and checking video status`);
+        console.log(`[${new Date().toISOString()}] Attempt ${attempts + 1}: Refreshing page and checking video status`);
         
         // Wait for the table to load
         await page.waitForSelector('#videosListTable', { state: 'visible', timeout: 10000 });
@@ -64,27 +64,27 @@ test('Upload video test', async ({ page }) => {
 
         if (await row.count() > 0) {
           const rowText = await row.innerText();
-          console.log(`Found row with sample_video.MOV: ${rowText}`);
+          console.log(`[${new Date().toISOString()}] Found row with sample_video.MOV: ${rowText}`);
 
           // Check the video status
           if (rowText.includes('Processing')) {
-            console.log('Video is still in Processing status, will refresh again');
+            console.log(`[${new Date().toISOString()}] Video is still in Processing status, will refresh again`);
             await page.reload();
             await page.waitForTimeout(5000); // Wait for 5 seconds after reload
           } else if (rowText.includes('Online')) {
-            console.log('Video processing completed, status is now Online');
+            console.log(`[${new Date().toISOString()}] Video processing completed, status is now Online`);
             processingComplete = true;
           } else {
-            console.log('Video status is unclear, will refresh again');
+            console.log(`[${new Date().toISOString()}] Video status is unclear, will refresh again`);
           }
         } else {
-          console.log('sample_video.MOV not found in the list, will try again');
+          console.log(`[${new Date().toISOString()}] sample_video.MOV not found in the list, will try again`);
         }
 
         attempts++;
 
         if (!processingComplete) {
-          console.log('Waiting 10 seconds before next refresh');
+          console.log(`[${new Date().toISOString()}] Waiting 10 seconds before next refresh`);
           await page.waitForTimeout(10000); // Wait for 10 seconds before next attempt
         }
       }
@@ -92,10 +92,10 @@ test('Upload video test', async ({ page }) => {
       if (!processingComplete) {
 
     // Take a screenshot after video processing
-    console.log('Current working directory:', process.cwd());
-    console.log('Current user:', require('os').userInfo().username);
+    console.log(`[${new Date().toISOString()}] Current working directory:`, process.cwd());
+    console.log(`[${new Date().toISOString()}] Current user:`, require('os').userInfo().username);
   
-      console.log('Taking screenshot of the stream creation result');
+      console.log(`[${new Date().toISOString()}] Taking screenshot of the stream creation result`);
       const screenshotDir = './historical-screenshots';
       const fs = require('fs');
       if (!fs.existsSync(screenshotDir)) {
@@ -103,14 +103,14 @@ test('Upload video test', async ({ page }) => {
       }
       
       const screenshotPath = `${screenshotDir}/upload-video-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-      console.log(`Saving screenshot to: ${screenshotPath}`);
+      console.log(`[${new Date().toISOString()}] Saving screenshot to: ${screenshotPath}`);
       
       await page.screenshot({ 
         path: screenshotPath,
         fullPage: true 
       });
 
-        console.log('Processing did not complete after maximum attempts');
+        console.log(`[${new Date().toISOString()}] Processing did not complete after maximum attempts`);
       }});
 
 
