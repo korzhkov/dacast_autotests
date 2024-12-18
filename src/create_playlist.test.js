@@ -1,6 +1,12 @@
 const { test, expect } = require('./utils');
 const { uploadVideo } = require('./helpers/fileUploader');
 
+let clipboardy;
+
+test.beforeAll(async () => {
+  clipboardy = await import('clipboardy');
+});
+
 test('Create playlist test', async ({ page, browser }) => {
   console.log(`Using browser: ${browser.browserType().name()}`);
   console.log(`Browser version: ${browser.version()}`);
@@ -45,7 +51,7 @@ test('Create playlist test', async ({ page, browser }) => {
     // Upload sample_video.MOV if it doesn't exist
     if (!sample1Exists) {
       console.log('Uploading sample_video.MOV');
-      await uploadVideo(page, 'sample_video.MOV');
+      await uploadVideo(page, 'sample_video.MOV', clipboardy);
       ({ sample1Exists, sample2Exists } = await checkExistingVideos());
       console.log('sample_video.MOV uploaded successfully');
     }
@@ -53,7 +59,7 @@ test('Create playlist test', async ({ page, browser }) => {
     // Upload sample_video2.MOV if it doesn't exist (playlist requires at least 2 videos)
     if (!sample2Exists) {
       console.log('Uploading sample_video2.MOV');
-      await uploadVideo(page, 'sample_video2.MOV');
+      await uploadVideo(page, 'sample_video2.MOV', clipboardy);
       console.log('sample_video2.MOV uploaded successfully');
     }
   });
