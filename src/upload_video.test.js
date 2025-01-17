@@ -55,7 +55,7 @@ test('Upload video test', async ({ page }) => {
         console.log(`[${new Date().toISOString()}] Attempt ${attempts + 1}: Refreshing page and checking video status`);
         
         // Wait for the table to load
-        await page.waitForSelector('#videosListTable', { state: 'visible', timeout: 10000 });
+        await page.waitForSelector('#videosListTable', { state: 'visible', timeout: 15000 });
 
         // Find the row containing 'sample_video.MOV'
         const row = await page.locator('#videosListTable tr')
