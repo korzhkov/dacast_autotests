@@ -6,16 +6,24 @@ const chromeConfig = {
     ...devices['Desktop Chrome'],
     channel: 'chrome',
     permissions: ['clipboard-write'],
+    // Creates a new browser context for each test to prevent memory leaks
+    browserContext: 'force-new',
+    launchOptions: {
+      // Prevents crashes in Docker/Linux due to memory limits
+      args: ['--disable-dev-shm-usage']
+    }
   },
 };
 
 const config = defineConfig({
   testDir: './src',
   stopOnFirstFailure: false,
-  fullyParallel: true,
+  // Disabled parallel execution to better control resource usage
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Limit concurrent tests to prevent server overload
+  workers: 2,
   reporter: [
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
@@ -26,9 +34,16 @@ const config = defineConfig({
     trace: 'on-first-retry',
     headless: false,
     viewport: { width: 1280, height: 720 },
-    actionTimeout: 0,
+    // 5 minutes timeout for actions to prevent hanging tests
+    actionTimeout: 300000,
     ignoreHTTPSErrors: true,
+    contextOptions: {
+      // Reduces CPU usage by minimizing animations
+      reducedMotion: 'reduce'
+    }
   },
+  // Added to clean up Chrome processes after tests complete
+  globalTeardown: require.resolve('./globalTeardown'),
   projects: [
    //  {
 //       name: 'quick2',
