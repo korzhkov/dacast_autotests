@@ -95,7 +95,7 @@ test('Dacast free trial test', async ({ page }) => {
   await test.step('Fill out the Free Trial form', async () => {
     console.log('Filling out the form');
 
-    await page.getByLabel('Email').click();
+    await page.locator('#email').click();
     // This line generates a random email address in the format: yk_XXXXXX@domain where X is either:
     // 1. A random lowercase letter (a-z) if Math.random() < 0.5
     // 2. A random digit (0-9) if Math.random() >= 0.5
@@ -109,7 +109,7 @@ test('Dacast free trial test', async ({ page }) => {
     // - Math.floor(Math.random() * 10) generates random digit 0-9
     // - .join('') combines the 6 random chars into a single string
     // - Prefixed with 'yk_' and suffixed with @randomDomain
-    await page.getByLabel('Email').fill(`yk_${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@${randomDomain}`);
+    await page.locator('#email').fill(`yk_${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@${randomDomain}`);
     
 
     // Select a random first name and last name
@@ -118,40 +118,40 @@ test('Dacast free trial test', async ({ page }) => {
 
     console.log(`Using name: ${firstName} ${lastName}`);
 
-    await page.getByLabel('First Name').click();
+    await page.locator('#firstName').click();
     for (const char of firstName) {
       await page.keyboard.type(char, { delay: Math.floor(Math.random() * (250 - 50 + 1)) + 50 });
     }
-    await page.getByLabel('First Name').press('Tab');
+    await page.locator('#firstName').press('Tab');
 
     for (const char of lastName) {
       await page.keyboard.type(char, { delay: Math.floor(Math.random() * (250 - 50 + 1)) + 50 });
     }
     
-    await page.getByLabel('Last Name').press('Tab');
+    await page.locator('#lastName').press('Tab');
     // Generate a random US phone number
     const phoneNumber = generateUSPhoneNumber();
     console.log(`Using phone number: ${phoneNumber}`);
 
-    await page.getByLabel('Phone Number').click();
+    await page.locator('#tel').click();
     for (const char of phoneNumber) {
       await page.keyboard.type(char, { delay: Math.floor(Math.random() * (250 - 50 + 1)) + 50 });
     }
-    await page.getByLabel('Phone Number').press('Tab');
-    await page.getByLabel('Company URL').click();
-    await page.getByLabel('Company URL').fill('');
+    await page.locator('#tel').press('Tab');
+    await page.locator('#url').click();
+    await page.locator('#url').fill('');
     
     console.log(`Using domain: ${randomDomain}`);
     for (const char of `https://${randomDomain}`) {
       await page.keyboard.type(char, { delay: Math.floor(Math.random() * (250 - 50 + 1)) + 50 });
     }
-    await page.getByLabel('Company URL').press('Tab');
+    await page.locator('#url').press('Tab');
     
     // Generate a random password
     const randomPassword = generateRandomPassword();
     console.log(`Using password: ${randomPassword}`);
 
-    await page.getByLabel('Password').click();
+    await page.locator('#password').click();
     for (const char of randomPassword) {
       await page.keyboard.type(char, { delay: Math.floor(Math.random() * (250 - 50 + 1)) + 50 });
     }
