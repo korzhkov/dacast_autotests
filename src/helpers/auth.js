@@ -8,10 +8,10 @@ const { getEnvVars } = require('./envHelper');
  * @param {string} password - User password
  */
 async function login(page, host, username, password) {
-  // Navigate to login page
+    // Navigate to login page
   await page.goto(`https://${host}/login`);
   // Fill in credentials
-  await page.getByLabel('Email').fill(username);
+  await page.locator('#email').fill(username);
   await page.locator('input[name="password"]').fill(password);
   // Submit login form
   await page.getByRole('button', { name: 'Log In' }).click();
