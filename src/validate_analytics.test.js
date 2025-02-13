@@ -17,8 +17,9 @@ test('Validate analytics test', async ({ page }) => {
 
 
     await test.step('Analytics check date range', async () => {
+      await page.pause();
 
-        await page.getByText('Analytics').click();
+        await page.getByText('Analytics', { exact: true }).click();
         await page.locator('#dropdownTitle').first().click();
         await page.locator('[id="datePresetDropdown_Last\\ Month2"] div').click();
         // Wait for the URL to update after selecting the date range
