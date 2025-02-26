@@ -2,6 +2,36 @@ const { test } = require('@playwright/test');
 const { execSync } = require('child_process');
 const config = require('./playwright.config.js');
 
+// Функция для очистки Xvfb перед запуском тестов
+function cleanupXvfb() {
+  // Только для Linux систем
+  if (process.platform === 'linux') {
+    console.log(`[${new Date().toISOString()}] Cleaning up Xvfb processes...`);
+    try {
+      // Проверяем наличие systemctl
+      try {
+        execSync('which systemctl >/dev/null 2>&1');
+        execSync('sudo systemctl stop xvfb 2>/dev/null || true');
+      } catch (e) {
+        // systemctl не найден, пропускаем
+      }
+      
+      // Убиваем процессы Xvfb
+      execSync('pkill -f Xvfb 2>/dev/null || true');
+      
+      // Удаляем файлы блокировки
+      execSync('rm -rf /tmp/.X*-lock /tmp/.X11-unix/X* 2>/dev/null || true');
+      
+      console.log(`[${new Date().toISOString()}] Xvfb cleanup completed`);
+    } catch (error) {
+      console.log(`[${new Date().toISOString()}] Some cleanup steps failed, but continuing...`);
+    }
+  }
+}
+
+// Вызываем функцию очистки перед определением других переменных
+cleanupXvfb();
+
 // Define valid environments
 const validEnvs = ['prod', 'stage', 'dev'];
 

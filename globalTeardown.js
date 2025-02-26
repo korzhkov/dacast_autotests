@@ -9,8 +9,14 @@ const exec = util.promisify(require('child_process').exec);
 async function globalTeardown() {
   try {
     // Close all browser instances
-    await chrome.killAll();     // for Chrome browser
-    await chromium.killAll();   // as a fallback mechanism
+    if (chrome && typeof chrome.killAll === 'function') {
+      await chrome.killAll();     // for Chrome browser
+    }
+    
+    // As a fallback, also try chromium.killAll()
+    if (chromium && typeof chromium.killAll === 'function') {
+      await chromium.killAll();
+    }
     
     // Clean up hanging Chrome processes (Linux only)
     // This is needed because sometimes browser processes might not be properly terminated
