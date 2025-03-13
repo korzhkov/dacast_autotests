@@ -10,19 +10,22 @@ test.beforeAll(async () => {
 test('Create stream test', async ({ page }) => {
   // Set a longer timeout for this test as stream creation might take a while
   test.setTimeout(300000);
-    
-    await test.step('Check and remove DVR stream if present', async () => {
+
+    await test.step('Check and remove test DVR stream if present', async () => {
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
-    const dvrCell = await page.getByRole('cell', { name: 'DVR' });
+    const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
     const dvrCellCount = await dvrCell.count();
 
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
-      await dvrCell.first().click();
+
+      
+
+  // await dvrCell.first().click();
 
       await page.getByPlaceholder('Search by Title...').click();
-      await page.getByPlaceholder('Search by Title...').fill('This is a test');
+      await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
       await page.waitForTimeout(1000);
       await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
@@ -55,11 +58,11 @@ test('Create stream test', async ({ page }) => {
       await page.getByRole('button', { name: 'Create' }).first().click();
     }
     
-    await page.locator('.sc-iLLODe').first().click();
+    await page.getByText('Standard Passthrough Channel').first().click();
     await page.getByRole('button', { name: 'Choose advanced options' }).nth(1).click();
     const currentDate = new Date();
     const formattedDate = `${currentDate.toISOString().slice(0, 19).replace('T', ' ')}.${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
-    streamName = `This is a test stream ${formattedDate}`;
+    streamName = `This is a test DVR stream ${formattedDate}`;
     await page.getByPlaceholder('My Live Stream').fill(streamName);
     await page.locator('div:nth-child(3) > .sc-gFAWRd > #dropdownTitle > .sc-klVQfs > .sc-gsFSXq > svg > path:nth-child(2)').click();
     
@@ -166,17 +169,19 @@ test('Create stream test', async ({ page }) => {
   });
 
   await test.step('Check and remove DVR stream if present', async () => {
+
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
-    const dvrCell = await page.locator('role=cell[name="DVR"]');
+    const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
     const dvrCellCount = await dvrCell.count();
 
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
-      await dvrCell.first().click();
+
+      // await dvrCell.first().click();
 
       await page.getByPlaceholder('Search by Title...').click();
-      await page.getByPlaceholder('Search by Title...').fill('This is a test');
+      await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
       await page.waitForTimeout(1000);  
       await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
