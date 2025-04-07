@@ -1,0 +1,25 @@
+834a3032ed4b4a3c687500e1a5c7244d8219adf4<|ENT|><|RY|>Refactor create_stream.test.js to improve DVR stream handling<|COM|><|MIT|>
+90284980a7d137d750e252b3f9df4c1b29c671fd<|ENT|><|RY|>Remove page.pause() in analytics test<|COM|><|MIT|>
+8541b8dcc87607bf9278f4f368c46becfcb2b6f1<|ENT|><|RY|>Enhance browser process cleanup and Xvfb management<|COM|><|MIT|>
+3f5386071e4551a8a55ef9117aab2294eb4c218d<|ENT|><|RY|>Analytics - someone changed locator in the left menu - fixed.<|COM|><|MIT|>
+b81ccd40210b8c8b4d8cc425d8bfdc49f4832149<|ENT|><|RY|>All locators for the form were changed - fixed.<|COM|><|MIT|>
+3399f7dff946ac5930b917cc72e008bbe3fcd1f5<|ENT|><|RY|>Someone updated locator for username field - fixed.<|COM|><|MIT|>
+cf65756bb8f88a681520c1727802a79c3df05118<|ENT|><|RY|>Updated Playwright configuration to enhance test stability and resource management. Changes include disabling parallel execution, limiting concurrent workers, and increasing action timeout to 5 minutes. Added browser context options to reduce CPU usage and prevent memory leaks. Implemented global teardown to clean up Chrome processes post-tests.<|COM|><|MIT|>
+28fa406bd3c2454920ea67dbb1fc99003c1f2026<|ENT|><|RY|>Increased timeout for video list table visibility check in upload_video.test.js from 10 seconds to 15 seconds to accommodate slower loading times. This change aims to enhance the reliability of the video upload tests.<|COM|><|MIT|>
+6c543454fc8be89ade9efcf4bd6fd9b40f3fceef<|ENT|><|RY|>Refactor create_playlist.test.js to include clipboardy for video uploads<|COM|><|MIT|>
+0ce02c4dc722725317f8d99e12685034aacc347a<|ENT|><|RY|>Added vod-id and timestamps to get more info for DC-9745<|COM|><|MIT|>
+9d14b989ae1f1687fda8313e142bccdbf4b6f863<|ENT|><|RY|>Increased timeout for video upload test and max attempts for status check. Updated timeout from 300000 to 500000 milliseconds and max attempts from 10 to 30 to accommodate longer processing times. It's a temp solution for DC-9745<|COM|><|MIT|>
+ce30bec7822009ef90c2e39fcd5c9fb9f9ed4302<|ENT|><|RY|>Typo fixed<|COM|><|MIT|>
+f73d3c507b910490933e7d456e7823d0a1c89a7b<|ENT|><|RY|>- Added screenshot generation in case when failed Free Trial test (usually it happens when Welcome not found on Dashboard page) - Added screenshot generation in case when Scheduler test failing on the Preview > Play step - should give us visibility what's happening. - Added screenshot generation in case when download data did not work on analytics test + added URL output to the log in case of error.<|COM|><|MIT|>
+2eea645f35ba4081e677b1b4ff44bd1da23dbf0b<|ENT|><|RY|>x3<|COM|><|MIT|>
+cc75e017dd2a1765032294365206a1a6b2dde0fa<|ENT|><|RY|>Added screenshot generation in case when video processing was not complete after 10 attempts.<|COM|><|MIT|>
+9df05d5d8c12c4bbd3352044af56bdccd9a7df5f<|ENT|><|RY|>extended "server time from headers"<|COM|><|MIT|>
+1ee6cff507564427aab2fefb9a253d042d3c7953<|ENT|><|RY|>Added date/time info collection to vod2live test to localize issue with timezone during the night runs<|COM|><|MIT|>
+2e3d5d66a70d0124a5d27a982f7956181629994b<|ENT|><|RY|>Changed to different folder for screenshots<|COM|><|MIT|>
+196490861c37b187af80636fd8d8de3f4cc6d5ca<|ENT|><|RY|>Trying to get screenshots taken when running via cron/dashboard<|COM|><|MIT|>
+d64de301c78c25c37c7bcb7534fbd880c200f646<|ENT|><|RY|>Seems that Scheduler functionality was fixed, replaced sample video used to test playback.<|COM|><|MIT|>
+249d2124c281e8a7c65013ff6895fbc050d89ad0<|ENT|><|RY|>Updated readme.<|COM|><|MIT|>
+e2b10d11f979ad69e60a77d7839fb12683b1a126<|ENT|><|RY|>Added screenshot generation before the step where if fails on the night runs<|COM|><|MIT|>
+7ffed7a930720a2eca84a0b0b3906b2413d0f862<|ENT|><|RY|>just some notes how email is being generated for trial accounts<|COM|><|MIT|>
+157c5ad3803ef376bf4f4a32e89975853433dc7e<|ENT|><|RY|>Little change in timeout to make test a bit more stable<|COM|><|MIT|>
+fd9a22246b87ad96636679ac1e303485f54608e3<|ENT|><|RY|>Improved support for dev and stage environments<|COM|><|MIT|>
