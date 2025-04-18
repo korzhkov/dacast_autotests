@@ -109,7 +109,12 @@ const config = defineConfig({
       name: 'analytics',
       testMatch: '**/validate_analytics.test.js',
       use: chromeConfig.use,
-    }
+    },
+    {
+      name: 'forms',
+      testMatch: '**/validate_forms.test.js',
+      use: chromeConfig.use,
+    },
   ],
 });
 
