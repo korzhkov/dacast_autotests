@@ -44,7 +44,7 @@ test('Dacast chat test', async ({ page }) => {
     expect(matomoRequest).not.toBeNull();
   });
   
-  /*
+  
   await test.step('Handle OK button', async () => {
     console.log('Waiting for OK button');
     await page.getByRole('button', { name: 'OK' }).waitFor({ state: 'visible', timeout: 30000 });
@@ -62,7 +62,7 @@ test('Dacast chat test', async ({ page }) => {
       console.error('OK button is not enabled');
     }
   });
-  */
+  
 
   await test.step('Open chat', async () => {
     console.log('Starting chat validation');
