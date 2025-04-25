@@ -550,8 +550,10 @@ await test.step('Check Sharing button', async () => {
     expoDomain = 'dacastexpo.com';
   }
   // Check if the copied link starts with the correct domain
-  expect(clipboardContent).toMatch(new RegExp(`^https://${expoDomain}\\?id=.+$`));
+  expect(clipboardContent).toMatch(new RegExp(`^https://${expoDomain}/[a-f0-9-]{36}$`));
   console.log('Copied share link:', clipboardContent);
+
+  
 
   // Go to the link
   await page.goto(clipboardContent);
