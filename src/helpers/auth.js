@@ -10,6 +10,16 @@ const { getEnvVars } = require('./envHelper');
 async function login(page, host, username, password) {
     // Navigate to login page
   await page.goto(`https://${host}/login`);
+
+  
+  // Check for cookie banner and handle it if present
+  await page.waitForTimeout(5000);
+  
+  const cookieBanner = page.getByRole('heading', { name: 'This website uses cookies' });
+  if (await cookieBanner.isVisible()) {
+    await page.getByRole('button', { name: 'OK' }).click();
+  }
+
   // Fill in credentials
   await page.locator('#email').fill(username);
   await page.locator('input[name="password"]').fill(password);

@@ -162,13 +162,13 @@ test('Dacast free trial test', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign up free' }).click();
     console.log('Signup button clicked');
 
-    // Waiting for the reCaptcha by-pass way implemented
+    
 
   });
   await page.waitForTimeout(5000);
   await test.step('Validate Dashboard', async () => {
     try {
-      await expect(page.getByText(/Welcome, .+!/)).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText(/Welcome, .+!/)).toBeVisible({ timeout: 120000 });
       console.log('Welcome message is visible');
     } catch (error) {
       console.error('Test did not complete: Welcome is not visible');

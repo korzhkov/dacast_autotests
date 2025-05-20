@@ -10,6 +10,9 @@ test.beforeAll(async () => {
 test('Upload video test', async ({ page }) => {
   // Set a longer timeout for this test as video upload might take a while
   test.setTimeout(500000);
+  // Get and log browser version
+  const browserVersion = await page.evaluate(() => navigator.userAgent);
+  console.log(`[${new Date().toISOString()}] Browser version: ${browserVersion}`);
 
   await test.step('Upload video', async () => {
     await uploadVideo(page, 'sample_video.MOV', clipboardy);

@@ -115,6 +115,11 @@ const config = defineConfig({
       testMatch: '**/validate_forms.test.js',
       use: chromeConfig.use,
     },
+    {
+      name: 'stream_lookup',
+      testMatch: '**/api_stream_lookup.test.js',
+      use: chromeConfig.use,
+    },
   ],
 });
 
