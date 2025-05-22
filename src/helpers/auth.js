@@ -13,7 +13,7 @@ async function login(page, host, username, password) {
 
   
   // Check for cookie banner and handle it if present
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(2000);
   
   const cookieBanner = page.getByRole('heading', { name: 'This website uses cookies' });
   if (await cookieBanner.isVisible()) {

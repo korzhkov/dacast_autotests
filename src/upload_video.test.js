@@ -147,14 +147,35 @@ test('Upload video test', async ({ page }) => {
     
     // Save the changes (need to click somewhere outside of the right panel to make it saved)
     await page.getByRole('banner').getByText('Videos').first().click();
-    
+    console.log('Navigated back to Videos page');
     // Verify the changes were saved successfully
     await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });
   });
-  
-  await page.getByRole('row', { filter: 'sample_video.MOV' }).getByRole('link').first().click();
 
-  await test.step('Verify video download', async () => {
+
+  await test.step('Upload thumbnail check', async () => {
+    // Update the video description
+    await page.getByRole('cell', { name: 'sample_video.MOV' }).first().click();
+    await page.locator('#vod-splashscreendragAndDrop').getByRole('img').nth(1).click();
+    
+    // Find the specific file input element for splashscreen upload
+    const fileInput = page.locator('#vod-splashscreenUploadInput');
+    await fileInput.setInputFiles('sample_logo.png');
+    await expect(page.locator('text="File uploaded"')).toBeVisible({ timeout: 10000 });
+    console.log('Splashscreen successfully uploaded');
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('banner').getByText('Videos').first().click();
+    console.log('Navigated back to Videos page');
+  });
+
+
+
+    await test.step('Verify video download', async () => {
+
+    await page.getByRole('row', { filter: 'sample_video.MOV' }).getByRole('link').first().click();
+
     let downloadStarted = false;
     const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
     
