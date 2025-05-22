@@ -84,13 +84,18 @@ test('Dacast free trial test', async ({ page }) => {
       console.error('Error loading page:', error);
       throw error;
     }
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
   });
 
 
-  await page.goto(`https://${host}/signup?autotest=true`);
-  console.log('Another page load');
-  await page.waitForTimeout(5000);
+  //await page.goto(`https://${host}/signup?autotest=true`);
+  //console.log('Another page load');
+  //await page.waitForTimeout(5000);
+
+  const cookieBanner = page.getByRole('heading', { name: 'This website uses cookies' });
+  if (await cookieBanner.isVisible()) {
+    await page.getByRole('button', { name: 'OK' }).click();
+  }
 
   await test.step('Fill out the Free Trial form', async () => {
     console.log('Filling out the form');
