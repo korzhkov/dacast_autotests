@@ -85,7 +85,8 @@ test('Lookup stream info via curl', async () => {
   
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
-  const curlCmd = `curl -k -X GET https:^/^/${hostAPI}^/v2^/channel^/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   // Выводим команду в консоль (маскируем API ключ для безопасности)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
