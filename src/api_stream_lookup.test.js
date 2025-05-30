@@ -23,7 +23,7 @@ test('Create stream via API', async () => {
   const urlSeparator = isWindows ? '^/^/' : '//';
   const curlCmd = `curl -k -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"europe\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
 
-  // Mask API key for logging
+  // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
   console.log('Executing curl command:', maskedCmd);
 
@@ -88,7 +88,7 @@ test('Lookup stream info via curl', async () => {
   const urlSeparator = isWindows ? '^/^/' : '//';
   const curlCmd = `curl -k -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
-  // Выводим команду в консоль (маскируем API ключ для безопасности)
+  // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
   console.log('Executing curl command:', maskedCmd);
   
@@ -163,7 +163,7 @@ test('Update stream via API', async () => {
   const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
   // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
 
-  // Выводим команду в консоль (маскируем API ключ для безопасности)
+  // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
   console.log('Executing curl command:', maskedCmd);
   

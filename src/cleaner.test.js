@@ -56,7 +56,7 @@ test('Cleaner', async ({ page }) => {
 
     if (!noStreamsText) {
       await page.getByPlaceholder('Search by Title...').click();
-      await page.getByPlaceholder('Search by Title...').fill('Pre-recorded stream');
+      await page.getByPlaceholder('Search by Title...').fill('pre-recorded API');
       await page.waitForTimeout(2000);
       await page.getByPlaceholder('Search by Title...').press('Enter');
       await page.waitForTimeout(5000);
