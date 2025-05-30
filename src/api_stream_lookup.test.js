@@ -20,7 +20,8 @@ test('Create stream via API', async () => {
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const curlCmd = `curl -k -X POST https:^/^/${hostAPI}^/v2^/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"europe\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"europe\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
 
   // Mask API key for logging
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
@@ -157,8 +158,9 @@ test('Update stream via API', async () => {
   const newDescription = 'Updated description via API';
   const timestamp = new Date().toISOString();
   const newTitle = `Updated stream title via API ${timestamp}`;
-  const curlCmd = `curl -k -X PUT https:^/^/${hostAPI}^/v2^/channel^/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
-  // const curlCmd = `curl -k -X PUT https:^/^/${hostAPI}^/v2^/channel^/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
+  // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
 
   // Выводим команду в консоль (маскируем API ключ для безопасности)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
