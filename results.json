@@ -1,0 +1,351 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\YSK\\Dropbox\\testing\\dacast\\playwright.config.js",
+    "rootDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": "C:\\Users\\YSK\\Dropbox\\testing\\dacast\\globalTeardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "test-reports/html-report"
+        }
+      ],
+      [
+        "C:\\Users\\YSK\\Dropbox\\testing\\dacast\\src\\helpers\\customReporter.js",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 15000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "cleaner",
+        "name": "cleaner",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/cleaner.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chat",
+        "name": "chat",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/validate_chat.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "trial",
+        "name": "trial",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/validate_free_trial.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "upload",
+        "name": "upload",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/upload_video.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "playlist",
+        "name": "playlist",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_playlist.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "stream",
+        "name": "stream",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_stream.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "vod2live",
+        "name": "vod2live",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_vod2live.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "folder",
+        "name": "folder",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_folder.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "expo",
+        "name": "expo",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_expo.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "schedule",
+        "name": "schedule",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/create_schedule.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "analytics",
+        "name": "analytics",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/validate_analytics.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "forms",
+        "name": "forms",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/validate_forms.test.js"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/YSK/Dropbox/testing/dacast/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "stream_lookup",
+        "name": "stream_lookup",
+        "testDir": "C:/Users/YSK/Dropbox/testing/dacast/src",
+        "testIgnore": [],
+        "testMatch": [
+          "**/api_stream_lookup.test.js"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "version": "1.46.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "validate_free_trial.test.js",
+      "file": "validate_free_trial.test.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Dacast free trial test",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "trial",
+              "projectName": "trial",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "status": "passed",
+                  "duration": 21346,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "Starting test\n"
+                    },
+                    {
+                      "text": "Page loaded successfully\n"
+                    },
+                    {
+                      "text": "Filling out the form\n"
+                    },
+                    {
+                      "text": "Using name: Evelyn Patel\n"
+                    },
+                    {
+                      "text": "Using phone number: +1 385 843 7095\n"
+                    },
+                    {
+                      "text": "Using domain: openshot.org\n"
+                    },
+                    {
+                      "text": "Using password: z#z$%#a(A#!A_-(9\n"
+                    },
+                    {
+                      "text": "Form filled out\n"
+                    },
+                    {
+                      "text": "Signup button clicked\n"
+                    },
+                    {
+                      "text": "Welcome message is visible\n"
+                    },
+                    {
+                      "text": "Results directory: C:\\Users\\YSK\\Dropbox\\testing\\dacast\\results\\prod\\2025-06-04T15-42-57-840Z\n"
+                    },
+                    {
+                      "text": "Number of network logs: \u001b[33m192\u001b[39m\n"
+                    },
+                    {
+                      "text": "Saving JSON logs to: C:\\Users\\YSK\\Dropbox\\testing\\dacast\\results\\prod\\2025-06-04T15-42-57-840Z\\network-logs.json\n"
+                    },
+                    {
+                      "text": "JSON logs saved successfully\n"
+                    },
+                    {
+                      "text": "Saving HAR file to: C:\\Users\\YSK\\Dropbox\\testing\\dacast\\results\\prod\\2025-06-04T15-42-57-840Z\\network-logs.har\n"
+                    },
+                    {
+                      "text": "HAR file saved successfully\n"
+                    },
+                    {
+                      "text": "Test completed\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "Navigate to Free Trial page",
+                      "duration": 2264
+                    },
+                    {
+                      "title": "Fill out the Free Trial form",
+                      "duration": 12317
+                    },
+                    {
+                      "title": "Validate Dashboard",
+                      "duration": 1430
+                    }
+                  ],
+                  "startTime": "2025-06-04T15:42:57.850Z",
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "01e20981b1c153630f48-94374a25cd779b925a48",
+          "file": "validate_free_trial.test.js",
+          "line": 78,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-06-04T15:42:57.421Z",
+    "duration": 22272.460000000003,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

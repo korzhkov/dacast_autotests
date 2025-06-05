@@ -38,24 +38,26 @@ class ResultsManager {
   }
 
   /**
-   * Copy Playwright's results.json to our timestamped directory
-   * Source: [playwright-results-dir]/results.json
-   * Target: results/[env]/[timestamp]/results.json
+   * Copy Playwright's results.json and network logs to our timestamped directory
+   * Source: [playwright-results-dir]/*.json,*.har
+   * Target: results/[env]/[timestamp]/*.json,*.har
    */
   saveResults() {
     try {
-      // Path to Playwright's results file using config
-      const playwrightResults = path.join(process.cwd(), this.outputDir, 'results.json');
-      // Path where we want to copy the results
-      const targetPath = path.join(this.resultsDir, 'results.json');
+      const filesToCopy = ['results.json', 'network-logs.json', 'network-logs.har'];
+      
+      filesToCopy.forEach(file => {
+        const sourcePath = path.join(process.cwd(), this.outputDir, file);
+        const targetPath = path.join(this.resultsDir, file);
 
-      if (fs.existsSync(playwrightResults)) {
-        // Copy results file to our directory
-        fs.copyFileSync(playwrightResults, targetPath);
-        console.log(`Results saved to: ${targetPath}`);
-      } else {
-        console.log(`No results.json file found in ${this.outputDir}`);
-      }
+        if (fs.existsSync(sourcePath)) {
+          // Copy file to our directory
+          fs.copyFileSync(sourcePath, targetPath);
+          console.log(`Copied ${file} to: ${targetPath}`);
+        } else {
+          console.log(`File ${file} not found in ${this.outputDir}`);
+        }
+      });
     } catch (error) {
       console.error('Error saving results:', error);
     }
