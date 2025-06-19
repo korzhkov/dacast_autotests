@@ -21,7 +21,7 @@ test('Create stream via API', async () => {
   const isWindows = process.platform === 'win32';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"europe\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"europe\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
@@ -35,9 +35,20 @@ test('Create stream via API', async () => {
       console.error('Curl stderr:', stderr);
     }
     
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(201); // 201 Created for successful POST request
+    
     // Parse and format the JSON response for better readability
     try {
-      const response = JSON.parse(stdout);
+      const response = JSON.parse(responseBody);
       
       // Try to parse any nested JSON strings in the response
       if (response.details && typeof response.details === 'string') {
@@ -63,7 +74,7 @@ test('Create stream via API', async () => {
       }
     } catch (e) {
       console.log('\n=== Raw API Response ===');
-      console.log(stdout);
+      console.log(responseBody);
       console.log('=======================\n');
     }
     
@@ -86,7 +97,7 @@ test('Lookup stream info via curl', async () => {
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
@@ -100,9 +111,20 @@ test('Lookup stream info via curl', async () => {
       console.error('Curl stderr:', stderr);
     }
     
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(200); // 200 OK for successful GET request
+    
     // Parse and format the JSON response for better readability
     try {
-      const response = JSON.parse(stdout);
+      const response = JSON.parse(responseBody);
       
       // Try to parse any nested JSON strings in the response
       if (response.details && typeof response.details === 'string') {
@@ -133,7 +155,7 @@ test('Lookup stream info via curl', async () => {
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
-      console.log(stdout);
+      console.log(responseBody);
       console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
@@ -160,7 +182,7 @@ test('Update stream via API', async () => {
   const timestamp = new Date().toISOString();
   const newTitle = `Updated stream title via API ${timestamp}`;
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
   // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
 
   // Output command to console (masking API key for security)
@@ -175,9 +197,20 @@ test('Update stream via API', async () => {
       console.error('Curl stderr:', stderr);
     }
     
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(200); // 200 OK for successful PUT request
+    
     // Parse and format the JSON response for better readability
     try {
-      const response = JSON.parse(stdout);
+      const response = JSON.parse(responseBody);
       
       // Try to parse any nested JSON strings in the response
       if (response.details && typeof response.details === 'string') {
@@ -211,7 +244,7 @@ test('Update stream via API', async () => {
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
-      console.log(stdout);
+      console.log(responseBody);
       console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
