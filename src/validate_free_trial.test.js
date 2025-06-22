@@ -139,7 +139,7 @@ test('Dacast free trial test', async ({ page }) => {
     // - Math.floor(Math.random() * 10) generates random digit 0-9
     // - .join('') combines the 6 random chars into a single string
     // - Prefixed with 'yk_' and suffixed with @randomDomain
-    await page.locator('#email').fill(`yk_${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@${randomDomain}`);
+    await page.locator('#email').fill(`user-test+${Array(6).fill().map(() => Math.random() < 0.5 ? String.fromCharCode(97 + Math.floor(Math.random() * 26)) : Math.floor(Math.random() * 10)).join('')}@dacast.com`);
     
 
     // Select a random first name and last name
