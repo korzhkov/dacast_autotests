@@ -11,7 +11,7 @@ const apiKey = env === 'prod' ? process.env._API_KEY : (env === 'stage' ? proces
 // Variable to store the created stream ID
 let createdStreamId = null;
 
-test('Create V1 stream via API', async () => {
+test('Create V2 stream via API', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -21,7 +21,7 @@ test('Create V1 stream via API', async () => {
   const isWindows = process.platform === 'win32';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true,\\\"ingest_version\\\":\\\"v2\\\"}"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
