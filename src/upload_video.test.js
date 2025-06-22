@@ -174,12 +174,14 @@ test('Upload video test', async ({ page }) => {
 
     await test.step('Verify video download', async () => {
 
+      
+
     await page.getByRole('row', { filter: 'sample_video.MOV' }).getByRole('link').first().click();
 
     let downloadStarted = false;
     const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
     
-    await page.getByRole('button', { name: 'Download' }).click();
+    await page.getByRole('button', { name: 'Download' }).first().click();
     
     const download = await downloadPromise;
     
