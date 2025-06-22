@@ -74,8 +74,13 @@ test('Create V2 stream via API', async () => {
       }
       
       // Validate response fields - if this fails, the test should fail
+      expect(response.ingest_version).toBe("v2");
       expect(response.live_recording_enabled).toBe(true);
       expect(response.dvr_enabled).toBe(true);
+      expect(response.channel_type).toBe("transmux");
+      expect(response.region).toBe("north_america");
+      
+      
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
