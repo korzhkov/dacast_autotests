@@ -29,6 +29,9 @@ test('Create V2 stream via API', async () => {
   
   const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${jsonData}`;
 
+  // Debug: Show the actual JSON being sent
+  console.log('JSON data being sent:', jsonData);
+
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
   console.log('Executing curl command:', maskedCmd);
