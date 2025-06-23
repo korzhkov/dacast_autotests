@@ -21,16 +21,7 @@ test('Create V2 stream via API', async () => {
   const isWindows = process.platform === 'win32';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const urlSeparator = isWindows ? '^/^/' : '//';
-  
-  // Different JSON escaping for Windows and Linux
-  const jsonData = isWindows 
-    ? `"{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true,\\\"ingest_version\\\":\\\"v2\\\"}"`
-    : `'{"title":"Test Stream via API ${timestamp}","description":"Created via API test","channel_type":"transmux","region":"north_america","live_recording_enabled":true,"live_dvr_enabled":true,"ingest_version":"v2"}'`;
-  
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${jsonData}`;
-
-  // Debug: Show the actual JSON being sent
-  console.log('JSON data being sent:', jsonData);
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true,\\\"ingest_version\\\":\\\"v2\\\"}"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
