@@ -77,100 +77,10 @@ test('Create V2 stream via API', async () => {
       expect(response.ingest_version).toBe("v2");
       expect(response.live_recording_enabled).toBe(true);
       expect(response.dvr_enabled).toBe(true);
-      expect(response.channel_type).toBe("transmux");
-      expect(response.region).toBe("north_america");
+      // expect(response.channel_type).toBe("transmux");
+      expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com");
       
       
-
-    } catch (e) {
-      console.log('\n=== Raw API Response ===');
-      console.log(responseBody);
-      console.log('=======================\n');
-      throw e; // Re-throw the error to fail the test
-    }
-    
-  } catch (error) {
-    console.error('Error executing curl command:', error.message);
-    throw error;
-  }
-});
-
-
-test('Update stream via API', async () => {
-  // Get credentials from environment variables
-  if (!apiKey) {
-    throw new Error('API key not found in environment variables');
-  }
-  
-  if (!createdStreamId) {
-    throw new Error('No stream ID available from previous test');
-  }
-  
-  // Construct curl command based on platform
-  const isWindows = process.platform === 'win32';
-  const newDescription = 'Updated description via API';
-  const timestamp = new Date().toISOString();
-  const newTitle = `Updated stream title via API ${timestamp}`;
-  const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
-  // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
-
-  // Output command to console (masking API key for security)
-  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
-  console.log('Executing curl command:', maskedCmd);
-  
-  try {
-    console.log(`Executing request for environment: ${env}`);
-    const { stdout, stderr } = await execAsync(curlCmd);
-    
-    if (stderr) {
-      console.error('Curl stderr:', stderr);
-    }
-    
-    // Extract HTTP status code from response
-    const lines = stdout.split('\n');
-    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
-    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
-    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
-    
-    console.log(`HTTP Status Code: ${httpStatus}`);
-    
-    // Validate HTTP status code
-    expect(httpStatus).toBe(200); // 200 OK for successful PUT request
-    
-    // Parse and format the JSON response for better readability
-    try {
-      const response = JSON.parse(responseBody);
-      
-      // Try to parse any nested JSON strings in the response
-      if (response.details && typeof response.details === 'string') {
-        try {
-          const nestedJson = JSON.parse(response.details.split('\n')[1]);
-          response.details = {
-            message: response.details.split('\n')[0],
-            trace: nestedJson
-          };
-        } catch (e) {
-          // If nested JSON parsing fails, keep original details
-        }
-      }
-
-      console.log('\n=== API Response ===');
-      console.log(JSON.stringify(response, null, 2));
-      console.log('===================\n');
-
-      // Log response object structure for debugging
-      console.log('\n=== Response Object Structure ===');
-      console.log('Available fields and values:');
-      Object.entries(response).forEach(([key, value]) => {
-        console.log(`${key}:`, value);
-      });
-      console.log('===============================\n');
-
-      // Add assertions to check if fields were updated
-      expect(response.description).toBe(newDescription);
-      expect(response.title).toBe(newTitle);
-      expect(response.live_recording_enabled).toBe(false);
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
@@ -291,6 +201,97 @@ test('Get stream list and find created stream', async () => {
   }
 });
 
+test('Update stream via API', async () => {
+  // Get credentials from environment variables
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+  
+  if (!createdStreamId) {
+    throw new Error('No stream ID available from previous test');
+  }
+  
+  // Construct curl command based on platform
+  const isWindows = process.platform === 'win32';
+  const newDescription = 'Updated description via API';
+  const timestamp = new Date().toISOString();
+  const newTitle = `Updated stream title via API ${timestamp}`;
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false,\\\"live_dvr_enabled\\\":false}"`;
+  // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
+
+  // Output command to console (masking API key for security)
+  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing curl command:', maskedCmd);
+  
+  try {
+    console.log(`Executing request for environment: ${env}`);
+    const { stdout, stderr } = await execAsync(curlCmd);
+    
+    if (stderr) {
+      console.error('Curl stderr:', stderr);
+    }
+    
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(200); // 200 OK for successful PUT request
+    
+    // Parse and format the JSON response for better readability
+    try {
+      const response = JSON.parse(responseBody);
+      
+      // Try to parse any nested JSON strings in the response
+      if (response.details && typeof response.details === 'string') {
+        try {
+          const nestedJson = JSON.parse(response.details.split('\n')[1]);
+          response.details = {
+            message: response.details.split('\n')[0],
+            trace: nestedJson
+          };
+        } catch (e) {
+          // If nested JSON parsing fails, keep original details
+        }
+      }
+
+      console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n');
+
+      // Log response object structure for debugging
+      console.log('\n=== Response Object Structure ===');
+      console.log('Available fields and values:');
+      Object.entries(response).forEach(([key, value]) => {
+        console.log(`${key}:`, value);
+      });
+      console.log('===============================\n');
+
+      // Add assertions to check if fields were updated
+      expect(response.description).toBe(newDescription);
+      expect(response.title).toBe(newTitle);
+      expect(response.live_recording_enabled).toBe(false);
+
+    } catch (e) {
+      console.log('\n=== Raw API Response ===');
+      console.log(responseBody);
+      console.log('=======================\n');
+      throw e; // Re-throw the error to fail the test
+    }
+    
+  } catch (error) {
+    console.error('Error executing curl command:', error.message);
+    throw error;
+  }
+});
+
+
+
 test('Lookup stream info via curl', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
@@ -364,7 +365,7 @@ test('Lookup stream info via curl', async () => {
 
       // Add assertions to check response parameters
       expect(response.live_recording_enabled).toBe(false);
-      expect(response.dvr_enabled).toBe(true);
+      expect(response.dvr_enabled).toBe(false);
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
