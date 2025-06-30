@@ -11,13 +11,37 @@ test('Dacast chat test', async ({ page }) => {
   await test.step('Navigate and check Matomo', async () => {
 
     console.log('Navigating to main page of dacast.com');
-    await page.goto(`https://${host}/`, { waitUntil: 'networkidle', timeout: 3000 });
+    await page.goto(`https://${host}/`, { waitUntil: 'networkidle', timeout: 30000 });
     
     // Чтобы пошло грузиться...
     await page.getByPlaceholder('Email').click();
+    
+      await test.step('Handle OK button', async () => {
+      console.log('Waiting for OK button');
+      await page.getByRole('button', { name: 'OK' }).waitFor({ state: 'visible', timeout: 30000 });
+      console.log('OK button is visible');
+
+      await page.getByRole('checkbox', { name: 'Preferences' }).check();
+      await page.getByRole('checkbox', { name: 'Statistics' }).check();
+      await page.getByRole('checkbox', { name: 'Marketing' }).check();
+  
+      const okButton = page.getByRole('button', { name: 'OK' });
+      const isEnabled = await okButton.isEnabled();
+      console.log('OK button is enabled:', isEnabled);
+  
+      if (isEnabled) {
+        console.log('Clicking OK button');
+        await okButton.click({ force: true });
+        console.log('OK button clicked');
+      } else {
+        console.error('OK button is not enabled');
+      }
+    });
+
     // Ждем инициализации Matomo
+    console.log('Waiting for Matomo initialization');
     await page.waitForFunction(() => {
-        return window._paq !== undefined;
+      return window._paq !== undefined;
     });
 
     console.log('Navigation completed, waiting for Matomo request');
@@ -43,26 +67,6 @@ test('Dacast chat test', async ({ page }) => {
 
     expect(matomoRequest).not.toBeNull();
   });
-  
-  
-  await test.step('Handle OK button', async () => {
-    console.log('Waiting for OK button');
-    await page.getByRole('button', { name: 'OK' }).waitFor({ state: 'visible', timeout: 30000 });
-    console.log('OK button is visible');
-
-    const okButton = page.getByRole('button', { name: 'OK' });
-    const isEnabled = await okButton.isEnabled();
-    console.log('OK button is enabled:', isEnabled);
-
-    if (isEnabled) {
-      console.log('Clicking OK button');
-      await okButton.click({ force: true });
-      console.log('OK button clicked');
-    } else {
-      console.error('OK button is not enabled');
-    }
-  });
-  
 
   await test.step('Open chat', async () => {
     console.log('Starting chat validation');
@@ -82,7 +86,7 @@ test('Dacast chat test', async ({ page }) => {
     /* Attempt to click on the Chat element
     console.log('Attempting to click Chat element');
     try {
-      await page.locator('div').filter({ hasText: /^Chat$/ }).first.click({ timeout: 5000 });
+      await page.locator('div').filter({ hasText: /^Chat$/ }).first().click({ timeout: 5000 });
     } catch (error) {
       console.log('Failed to click Chat element, trying alternative method');
       await page.locator('div').filter({ hasText: /^Chat$/ }).first().click({ timeout: 5000 });
@@ -107,4 +111,5 @@ test('Dacast chat test', async ({ page }) => {
     await page.waitForTimeout(10000);
     console.log('Chat validation completed');
   });
+
 });
