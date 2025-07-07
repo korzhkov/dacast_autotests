@@ -193,7 +193,7 @@ test('Get stream list and find created stream', async () => {
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel?per_page=100 -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel?per_page=15 -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
 
   // Output command to console (masking API key for security)
