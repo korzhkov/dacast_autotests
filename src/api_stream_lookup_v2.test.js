@@ -81,7 +81,16 @@ test('Create V2 stream via API', async () => {
       expect(response.live_recording_enabled).toBe(true);
       expect(response.dvr_enabled).toBe(true);
       // expect(response.channel_type).toBe("transmux");
-      expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com/live");
+      
+      // Check publishing_point_primary based on environment
+      if (env === 'prod') {
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com/live");
+      } else if (env === 'stage') {
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dev.dacast.com/live");
+      } else {
+        // For dev environment
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dev.dacast.com/live");
+      }
       
       
 
@@ -111,7 +120,7 @@ test('Get stream list and find created stream', async () => {
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel?per_page=100 -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel?per_page=15 -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
 
   // Output command to console (masking API key for security)
