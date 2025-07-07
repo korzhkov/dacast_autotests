@@ -81,7 +81,7 @@ test('Create V2 stream via API', async () => {
       expect(response.live_recording_enabled).toBe(true);
       expect(response.dvr_enabled).toBe(true);
       // expect(response.channel_type).toBe("transmux");
-      expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com");
+      expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com/live");
       
       
 
