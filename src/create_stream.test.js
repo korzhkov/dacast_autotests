@@ -20,10 +20,6 @@ test('Create stream test', async ({ page }) => {
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
 
-      
-
-  // await dvrCell.first().click();
-
       await page.getByPlaceholder('Search by Title...').click();
       await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
@@ -48,7 +44,6 @@ test('Create stream test', async ({ page }) => {
     
     // Start the process of creating a new stream
 
-    // await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
     const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
     if (createLiveStreamButton) {
@@ -71,38 +66,17 @@ test('Create stream test', async ({ page }) => {
     await expect(akamai1080).toBeVisible({ timeout: 1000});
     console.log('Akamai 1080p found, continuing with the test.');
 
-    //await page.locator('[id="streamSlotTypeDropdown_Standard\\ Passthrough\\ Akamai\\ Delivery3"] div').click();
     await page.getByText('Standard Passthrough Akamai Delivery').first().click();
-    // Enable DVR
-    //await page.locator('#pageContentContainer div').filter({ hasText: 'Create Live Stream Title Source Region Europe, Middle East & Africa Australia' }).locator('label').nth(1).click();
-    await page.locator('xpath=//*[@id="pageContentContainer"]/div[2]/div[2]/div/div[4]/div[1]/div[1]/label').click();
-    await page.waitForTimeout(1000);
-    await page.locator('.flex > .sc-bBeLUv > div > span:nth-child(2) > svg').click();
-
+    
     // Check if the Back button is present (based on requirements)
     const backButton = page.getByRole('button', { name: 'Back' });
     await expect(backButton).toBeVisible({ timeout: 1000 });
     console.log('Back button found, continuing with the test.');
- 
-    // Find the toggle by exact text "Rewind (DVR)"
-    const rewindToggle = page.locator('div:has(> span:text-is("Rewind (DVR)")) > input[type="checkbox"]');
-
-    // Wait for the element to be visible and accessible
-    await rewindToggle.waitFor({ state: 'attached', timeout: 5000 });
-
-    // Checking if DVR is enabled
-    const isDvrChecked = await rewindToggle.isChecked();
-
-    if (isDvrChecked) {
-      console.log('Rewind (DVR) toggle is enabled.');
-    } else {
-      console.log('Rewind (DVR) toggle is disabled.');
-    }
- 
         
     const createButton = page.locator('div.sc-iMTnTL:has(button:has-text("Create")):has(button:has-text("Back")) button:has-text("Create")');
     await createButton.click();
 
+    
     
   // Find the toggle by exact text "Live Stream Online"
     const streamOnlineToggle = page.locator('div:has(> span:text-is("Live Stream Online")) > input[type="checkbox"]');
@@ -136,37 +110,27 @@ test('Create stream test', async ({ page }) => {
     }
     
     console.log('Copied share link:', clipboardContent);
+
+    
+    await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
+    await page.locator('.mb2 > div > .sc-YysOf').first().click();
+    await page.waitForTimeout(2000);
+    await page.locator('.sc-cyRcrZ > .mb2 > div > .sc-YysOf').click();
+    await page.waitForTimeout(2000);
+    
+
  
     // Navigate to the Live Streams page
     await page.getByRole('link', { name: 'Live Streams' }).click();
 
     // If there are still no stream links, wait again and reload
     await page.waitForTimeout(15000);
-    await page.reload();
     console.log('Reloaded the page to get the stream appeared.');
-    /*
-    // Delete the stream
-    const streamRow = await page.locator(`#videosListTable tr`)
-      .filter({ hasText: streamName })
-      .first();
-
-    // Approach 1: Hover over the row before clicking
-    await streamRow.hover();
-    
-    // Approach 2: Use force: true to click even if the element is not visible
-    await streamRow.locator('div[id^="deleteTooltip"]').click({ force: true });
-
-    // Wait for and click the "Delete forever" button in the confirmation dialog
-    await page.getByRole('button', { name: 'Delete forever' }).click();
-
-    await page.waitForTimeout(5000);
     await page.reload();
-    console.log('Reloaded the page to validate the stream deletion.');
-    // Optional: Verify that the stream has been deleted
-    await expect(page.locator(`#videosListTable`).getByText(streamName)).not.toBeVisible();
-    console.log('Stream deleted, test completed.');
-     */
   });
+
+
+  
 
   await test.step('Check and remove DVR stream if present', async () => {
 
@@ -175,14 +139,61 @@ test('Create stream test', async ({ page }) => {
     const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
     const dvrCellCount = await dvrCell.count();
 
+    
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
 
-      // await dvrCell.first().click();
-
+      
       await page.getByPlaceholder('Search by Title...').click();
       await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
+
+      // Wait for the search results to load
+      await page.waitForTimeout(2000);
+
+      // Primary selectors: Search by content and structure
+      const recordingTooltip = page.locator('div.sc-kAyceB:has(span[id^="recordingTooltip"])');
+      const rewindTooltip = page.locator('div.sc-kAyceB:has(div[id^="rewindTooltip"])');
+
+      // Alternative selectors: Search by text content
+      const recordingByText = page.locator('div:has-text("Recording")');
+      const rewindByText = page.locator('div:has-text("DVR")');
+
+      // Wait for at least one element of each type to be present
+      try {
+        await recordingTooltip.first().waitFor({ state: 'attached', timeout: 10000 });
+        await rewindTooltip.first().waitFor({ state: 'attached', timeout: 10000 });
+      } catch (error) {
+        console.log('Primary selectors failed, trying alternative selectors...');
+      }
+
+      const recordingTooltipCount = await recordingTooltip.count();
+      const rewindTooltipCount = await rewindTooltip.count();
+
+      console.log(`Primary method: Found ${recordingTooltipCount} recording tooltip elements`);
+      console.log(`Primary method: Found ${rewindTooltipCount} rewind tooltip elements`);
+
+      // If primary method failed, try alternative method
+      if (recordingTooltipCount === 0 || rewindTooltipCount === 0) {
+        console.log('Trying alternative selectors...');
+        
+        const recordingByTextCount = await recordingByText.count();
+        const rewindByTextCount = await rewindByText.count();
+        
+        console.log(`Alternative method: Found ${recordingByTextCount} recording elements by text`);
+        console.log(`Alternative method: Found ${rewindByTextCount} rewind elements by text`);
+        
+        if (recordingByTextCount > 0 && rewindByTextCount > 0) {
+          console.log('Elements found using alternative method');
+        } else {
+          console.error('Neither primary nor alternative method found the required elements');
+          test.fail();
+        }
+      } else {
+        console.log('Elements found using primary method');
+      }
+
+            
       await page.waitForTimeout(1000);  
       await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
       await page.waitForTimeout(1000);
