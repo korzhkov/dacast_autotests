@@ -11,6 +11,21 @@ test('Cleaner', async ({ page }) => {
 
   console.log(`Running cleaner test in ${env.toUpperCase()} environment`);
 
+  await test.step('Navigate to Videos page to check for existing videos', async () => {
+    try {
+      console.log('Navigating to Videos page');
+      await page.locator('#scrollbarWrapper').getByText('Videos').click( {timeout: 10000} );  
+      await Promise.race([
+        page.waitForSelector('text="Upload your first Video!"', { timeout: 60000 }),
+        page.waitForSelector('a[href^="/videos/"]', { timeout: 60000 })
+      ]);
+      console.log('Successfully navigated to Videos page');
+    } catch (error) {
+      console.error('Error navigating to Videos page:', error);
+      test.fail(error);
+    }
+  });
+
   await test.step('Clean Videos', async () => {
     await page.waitForTimeout(5000);
     await page.goto(`https://${hostLogged}/videos?perPage=100`);
