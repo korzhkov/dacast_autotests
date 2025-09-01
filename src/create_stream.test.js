@@ -108,11 +108,8 @@ test('Create stream test', async ({ page }) => {
     } else if (env === 'dev') {
       expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/live\//);
     }
-    
     console.log('Copied share link:', clipboardContent);
 
-    await page.pause();
-    
     await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
     console.log('Clicked on Settings');
     await page.locator('.mb2 > div > .sc-YysOf').first().click();
