@@ -1,3 +1,13 @@
+/*
+What this series of tests does:
+1. Creates V1 stream via API with live_recording_enabled and live_dvr_enabled set to true
+2. Verifies that API response for created stream has live_recording_enabled and dvr_enabled set to true
+3. Updates description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and sets live_recording_enabled to false
+4. Verifies that API response for updated stream has updated description and title, and live_recording_enabled is set to false
+5. Gets list of streams and verifies that API response for created stream exists in the list
+6. Gets stream info and verifies that API response for created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to true
+*/
+
 const { test, expect } = require('./utils');
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -75,7 +85,8 @@ test('Create V1 stream via API', async () => {
       
       // Validate response fields - if this fails, the test should fail
       expect(response.live_recording_enabled).toBe(true);
-      expect(response.dvr_enabled).toBe(true);
+      expect(response.live_dvr_enabled).toBe(true);
+      expect(response.ingest_version).toBe('v1');
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');
@@ -150,9 +161,9 @@ test('Update stream via API', async () => {
         }
       }
 
-      console.log('\n=== API Response ===');
-      console.log(JSON.stringify(response, null, 2));
-      console.log('===================\n');
+      // console.log('\n=== API Response ===');
+      // console.log(JSON.stringify(response, null, 2));
+      //console.log('===================\n');
 
       // Log response object structure for debugging
       console.log('\n=== Response Object Structure ===');
@@ -236,9 +247,9 @@ test('Get stream list and find created stream', async () => {
         }
       }
 
-      console.log('\n=== API Response ===');
-      console.log(JSON.stringify(response, null, 2));
-      console.log('===================\n');
+    // console.log('\n=== API Response ===');
+    // console.log(JSON.stringify(response, null, 2));
+    // console.log('===================\n');
 
       // Log response structure for debugging
       console.log('\n=== Response Object Structure ===');
@@ -348,7 +359,7 @@ test('Lookup stream info via curl', async () => {
       // Temporary debug logging
       console.log('Response structure:', {
         live_recording_enabled: response.live_recording_enabled,
-        dvr_enabled: response.dvr_enabled
+        live_dvr_enabled: response.live_dvr_enabled
       });
 
       // Store the stream ID if the request was successful (even if validation fails)
@@ -359,7 +370,7 @@ test('Lookup stream info via curl', async () => {
 
       // Add assertions to check response parameters
       expect(response.live_recording_enabled).toBe(false);
-      expect(response.dvr_enabled).toBe(true);
+      expect(response.live_dvr_enabled).toBe(true);
 
     } catch (e) {
       console.log('\n=== Raw API Response ===');

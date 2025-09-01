@@ -186,6 +186,16 @@ The following tests are currently implemented:
 <li>Confirm successful free trial registration</li>
 </ul>
 
+<h3>API Stream Lookup Tests:</h3>
+<ul>
+<li><a href="https://docs.dacast.com/reference/create-stream" target=_blank>Create (V1) stream</a> via API with live_recording_enabled and live_dvr_enabled set to true</li>
+<li>Verify that API response for created stream has live_recording_enabled and live_dvr_enabled set to true</li>
+<li><a href="https://docs.dacast.com/reference/update-stream" target=_blank>Update stream</a> description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and set live_recording_enabled to false</li>
+<li>Verify that API response for updated stream has updated description and title, and live_recording_enabled is set to false</li>
+<li><a href="https://docs.dacast.com/reference/list-streams" target=_blank>Get list of streams</a> and verify that API response for created stream exists in the list</li>
+<li><a href="https://docs.dacast.com/reference/lookup-stream" target=_blank>Get stream info</a> and verify that API response for created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to true</li>
+</ul>
+
 <h3>Cleaner:</h3>
 
 Going step by step and cleaning up the platform from the test videos/streams/folders/playlists/expos and schedulers, **including trash folder**. Temporary it's not deleting long videos required for Schedule test. If you run all tests it will be run first by default and takes about 2 minutes.
@@ -200,6 +210,8 @@ Going step by step and cleaning up the platform from the test videos/streams/fol
 <li>_USERNAME: Email for login</li>
 <li>_PASSWORD: Password for login</li>
 <li>_SLACK_TOKEN: Slack token for notifications</li>
+<li>_HOST_API: API host URL for API tests</li>
+<li>_API_KEY: API key for authentication in API tests</li>
 </ul>
 
 <h4>Staging Environment:</h4>
@@ -210,6 +222,8 @@ Going step by step and cleaning up the platform from the test videos/streams/fol
 <li>_PASSWORD_STAGE: Password for staging login</li>
 <li>_BASIC_AUTH_STAGE_USER: Basic auth username for staging</li>
 <li>_BASIC_AUTH_STAGE_PASSWORD: Basic auth password for staging</li>
+<li>_HOST_API_STAGE: API host URL for staging API tests</li>
+<li>_API_KEY_STAGE: API key for staging API tests</li>
 </ul>
 
 <h4>Development Environment:</h4>
@@ -220,6 +234,8 @@ Going step by step and cleaning up the platform from the test videos/streams/fol
 <li>_PASSWORD_DEV: Password for development login</li>
 <li>_BASIC_AUTH_DEV_USER: Basic auth username for development</li>
 <li>_BASIC_AUTH_DEV_PASSWORD: Basic auth password for development</li>
+<li>_HOST_API_DEV: API host URL for development API tests</li>
+<li>_API_KEY_DEV: API key for development API tests</li>
 </ul>
 
 <h3>Environment-Specific Behaviors:</h3>
