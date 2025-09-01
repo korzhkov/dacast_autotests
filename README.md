@@ -186,7 +186,7 @@ The following tests are currently implemented:
 <li>Confirm successful free trial registration</li>
 </ul>
 
-<h3>API Stream Lookup Tests:</h3>
+<h3>API Stream Lookup Tests (V1):</h3>
 <ul>
 <li><a href="https://docs.dacast.com/reference/create-stream" target="_blank">Create (V1) stream</a> via API with live_recording_enabled and live_dvr_enabled set to true</li>
 <li>Verify that API response for created stream has live_recording_enabled and live_dvr_enabled set to true</li>
@@ -194,6 +194,16 @@ The following tests are currently implemented:
 <li>Verify that API response for updated stream has updated description and title, and live_recording_enabled is set to false</li>
 <li><a href="https://docs.dacast.com/reference/list-streams" target="_blank">Get list of streams</a> and verify that API response for created stream exists in the list</li>
 <li><a href="https://docs.dacast.com/reference/lookup-stream" target="_blank">Get stream info</a> and verify that API response for created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to true</li>
+</ul>
+
+<h3>API Stream Lookup Tests (V2):</h3>
+<ul>
+<li><a href="https://docs.dacast.com/reference/create-stream" target="_blank">Create (V2) stream</a> via API with live_recording_enabled and live_dvr_enabled set to true</li>
+<li>Verify that API response for created stream has HTTP status 201, live_recording_enabled and live_dvr_enabled set to true, ingest_version is v2, and correct publishing_point_primary for environment</li>
+<li><a href="https://docs.dacast.com/reference/update-stream" target="_blank">Update stream</a> description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and set live_recording_enabled to false and live_dvr_enabled to false</li>
+<li>Verify that API response for updated stream has HTTP status 200, updated description and title, live_recording_enabled is set to false, and live_dvr_enabled is set to false</li>
+<li><a href="https://docs.dacast.com/reference/list-streams" target="_blank">Get list of streams</a> and verify that API response has HTTP status 200 and created stream exists in the list</li>
+<li><a href="https://docs.dacast.com/reference/lookup-stream" target="_blank">Get stream info</a> and verify that API response has HTTP status 200, created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to false (V2 DVR auto-disables with recording)</li>
 </ul>
 
 <h3>Cleaner:</h3>
