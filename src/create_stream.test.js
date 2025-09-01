@@ -111,14 +111,17 @@ test('Create stream test', async ({ page }) => {
     
     console.log('Copied share link:', clipboardContent);
 
+    await page.pause();
     
     await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
+    console.log('Clicked on Settings');
     await page.locator('.mb2 > div > .sc-YysOf').first().click();
+    console.log('Clicked on Recordings');
     await page.waitForTimeout(2000);
-    await page.locator('.sc-cyRcrZ > .mb2 > div > .sc-YysOf').click();
-    await page.waitForTimeout(2000);
-    
-
+    await page.locator('.sc-bhqpjJ > .mb2 > div > .sc-YysOf').click();
+    console.log('Clicked on DVR');
+    await expect(page.getByText('Changes have been saved')).toBeVisible({ timeout: 10000 });
+    console.log('DVR settings changed');
  
     // Navigate to the Live Streams page
     await page.getByRole('link', { name: 'Live Streams' }).click();
