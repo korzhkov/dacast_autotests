@@ -1,11 +1,11 @@
 /*
 What this series of tests does:
-1. Creates V1 stream via API with live_recording_enabled and live_dvr_enabled set to true
-2. Verifies that API response for created stream has live_recording_enabled and dvr_enabled set to true
-3. Updates description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and sets live_recording_enabled to false
-4. Verifies that API response for updated stream has updated description and title, and live_recording_enabled is set to false
-5. Gets list of streams and verifies that API response for created stream exists in the list
-6. Gets stream info and verifies that API response for created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to true
+1. Creates V2 stream via API with live_recording_enabled and live_dvr_enabled set to true
+2. Verifies that API response for created stream has HTTP status 201, live_recording_enabled and live_dvr_enabled set to true, ingest_version is v2, and correct publishing_point_primary for environment
+3. Updates description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and sets live_recording_enabled to false and live_dvr_enabled to false
+4. Verifies that API response for updated stream has HTTP status 200, updated description and title, live_recording_enabled is set to false, and live_dvr_enabled is set to false
+5. Gets list of streams and verifies that API response has HTTP status 200 and created stream exists in the list
+6. Gets stream info and verifies that API response has HTTP status 200, created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to false (V2 DVR auto-disables with recording)
 */
 
 const { test, expect } = require('./utils');
@@ -21,7 +21,7 @@ const apiKey = env === 'prod' ? process.env._API_KEY : (env === 'stage' ? proces
 // Variable to store the created stream ID
 let createdStreamId = null;
 
-test('Create V1 stream via API', async () => {
+test('Create V2 stream via API', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -31,7 +31,7 @@ test('Create V1 stream via API', async () => {
   const isWindows = process.platform === 'win32';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true,\\\"ingest_version\\\":\\\"v1\\\"}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"title\\\":\\\"Test Stream via API ${timestamp}\\\",\\\"description\\\":\\\"Created via API test\\\",\\\"channel_type\\\":\\\"transmux\\\",\\\"region\\\":\\\"north_america\\\",\\\"live_recording_enabled\\\":true,\\\"live_dvr_enabled\\\":true,\\\"ingest_version\\\":\\\"v2\\\"}"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
@@ -54,6 +54,7 @@ test('Create V1 stream via API', async () => {
     console.log(`HTTP Status Code: ${httpStatus}`);
     
     // Validate HTTP status code
+    console.log('HTTP Status:', httpStatus);
     expect(httpStatus).toBe(201); // 201 Created for successful POST request
     
     // Parse and format the JSON response for better readability
@@ -73,9 +74,9 @@ test('Create V1 stream via API', async () => {
         }
       }
 
-      console.log('\n=== API Response ===');
-      console.log(JSON.stringify(response, null, 2));
-      console.log('===================\n');
+      // console.log('\n=== API Response ===');
+      // console.log(JSON.stringify(response, null, 2));
+      // console.log('===================\n');
 
       // Store the stream ID if the request was successful
       if (response.id) {
@@ -84,14 +85,31 @@ test('Create V1 stream via API', async () => {
       }
       
       // Validate response fields - if this fails, the test should fail
+      // Only check ingest_version on stage/dev environments where it's available
+      if (env !== 'prod') {
+        expect(response.ingest_version).toBe("v2");
+      }
       expect(response.live_recording_enabled).toBe(true);
       expect(response.live_dvr_enabled).toBe(true);
-      expect(response.ingest_version).toBe('v1');
+      expect(response.ingest_version).toBe("v2");
+      // expect(response.channel_type).toBe("transmux");
+      
+      // Check publishing_point_primary based on environment
+      if (env === 'prod') {
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dacast.com/live");
+      } else if (env === 'stage') {
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dev.dacast.com/live");
+      } else {
+        // For dev environment
+        expect(response.config.publishing_point_primary).toBe("rtmp://rtmp.us.live.dev.dacast.com/live");
+      }
+      
+      
 
     } catch (e) {
-      console.log('\n=== Raw API Response ===');
-      console.log(responseBody);
-      console.log('=======================\n');
+      // console.log('\n=== Raw API Response ===');
+      // console.log(responseBody);
+      // console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
     
@@ -118,7 +136,7 @@ test('Update stream via API', async () => {
   const timestamp = new Date().toISOString();
   const newTitle = `Updated stream title via API ${timestamp}`;
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\",\\\"title\\\":\\\"${newTitle}\\\",\\\"live_recording_enabled\\\":false,\\\"live_dvr_enabled\\\":false}"`;
   // const curlCmd = `curl -k -X PUT https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"description\\\":\\\"${newDescription}\\\"}"`;
 
   // Output command to console (masking API key for security)
@@ -163,7 +181,7 @@ test('Update stream via API', async () => {
 
       // console.log('\n=== API Response ===');
       // console.log(JSON.stringify(response, null, 2));
-      //console.log('===================\n');
+      // console.log('===================\n');
 
       // Log response object structure for debugging
       console.log('\n=== Response Object Structure ===');
@@ -179,9 +197,9 @@ test('Update stream via API', async () => {
       expect(response.live_recording_enabled).toBe(false);
 
     } catch (e) {
-      console.log('\n=== Raw API Response ===');
-      console.log(responseBody);
-      console.log('=======================\n');
+      // console.log('\n=== Raw API Response ===');
+      // console.log(responseBody);
+      // console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
     
@@ -247,9 +265,9 @@ test('Get stream list and find created stream', async () => {
         }
       }
 
-    // console.log('\n=== API Response ===');
-    // console.log(JSON.stringify(response, null, 2));
-    // console.log('===================\n');
+      // console.log('\n=== API Response ===');
+      // console.log(JSON.stringify(response, null, 2));
+      // console.log('===================\n');
 
       // Log response structure for debugging
       console.log('\n=== Response Object Structure ===');
@@ -285,9 +303,9 @@ test('Get stream list and find created stream', async () => {
       expect(foundStream.id).toBe(createdStreamId);
 
     } catch (e) {
-      console.log('\n=== Raw API Response ===');
-      console.log(responseBody);
-      console.log('=======================\n');
+      // console.log('\n=== Raw API Response ===');
+      // console.log(responseBody);
+      // console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
     
@@ -352,9 +370,9 @@ test('Lookup stream info via curl', async () => {
         }
       }
 
-      console.log('\n=== API Response ===');
-      console.log(JSON.stringify(response, null, 2));
-      console.log('===================\n');
+      // console.log('\n=== API Response ===');
+      // console.log(JSON.stringify(response, null, 2));
+      // console.log('===================\n');
 
       // Temporary debug logging
       console.log('Response structure:', {
@@ -370,12 +388,12 @@ test('Lookup stream info via curl', async () => {
 
       // Add assertions to check response parameters
       expect(response.live_recording_enabled).toBe(false);
-      expect(response.live_dvr_enabled).toBe(true);
+      expect(response.dvr_enabled).toBe(false);
 
     } catch (e) {
-      console.log('\n=== Raw API Response ===');
-      console.log(responseBody);
-      console.log('=======================\n');
+      // console.log('\n=== Raw API Response ===');
+      // console.log(responseBody);
+      // console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
     
@@ -384,4 +402,3 @@ test('Lookup stream info via curl', async () => {
     throw error;
   }
 });
-
