@@ -2,7 +2,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 // Base Chrome configuration that will be used by all tests
 const chromeConfig = {
-  use: { 
+  use: {
     ...devices['Desktop Chrome'],
     channel: 'chrome',
     permissions: ['clipboard-write'],
@@ -10,8 +10,8 @@ const chromeConfig = {
     browserContext: 'force-new',
     launchOptions: {
       // Prevents crashes in Docker/Linux due to memory limits
-      args: ['--disable-dev-shm-usage']
-    }
+      args: ['--disable-dev-shm-usage'],
+    },
   },
 };
 
@@ -28,7 +28,7 @@ const config = defineConfig({
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
     ['html', { outputFolder: 'test-reports/html-report' }],
-    ['./src/helpers/customReporter.js'] 
+    ['./src/helpers/customReporter.js'],
   ],
   use: {
     trace: 'on-first-retry',
@@ -39,22 +39,22 @@ const config = defineConfig({
     ignoreHTTPSErrors: true,
     contextOptions: {
       // Reduces CPU usage by minimizing animations
-      reducedMotion: 'reduce'
-    }
+      reducedMotion: 'reduce',
+    },
   },
   // Added to clean up Chrome processes after tests complete
   globalTeardown: require.resolve('./globalTeardown'),
   projects: [
-   //  {
-//       name: 'quick2',
- //     testMatch: '**/quick2.test.js',
- //     use: chromeConfig.use,
- //   },
- //   {
- //     name: 'quick',
- //     testMatch: '**/quick.test.js',
- //     use: chromeConfig.use,
- //   },
+    //  {
+    //       name: 'quick2',
+    //     testMatch: '**/quick2.test.js',
+    //     use: chromeConfig.use,
+    //   },
+    //   {
+    //     name: 'quick',
+    //     testMatch: '**/quick.test.js',
+    //     use: chromeConfig.use,
+    //   },
     {
       name: 'cleaner',
       testMatch: '**/cleaner.test.js',
@@ -72,7 +72,7 @@ const config = defineConfig({
     },
     {
       name: 'upload',
-      testMatch: '**/upload_video.test.js', 
+      testMatch: '**/upload_video.test.js',
       use: chromeConfig.use,
     },
     {
@@ -118,6 +118,12 @@ const config = defineConfig({
     {
       name: 'stream_lookup',
       testMatch: '**/api_stream_lookup.test.js',
+      use: chromeConfig.use,
+    },
+
+    {
+      name: 'api vod security',
+      testMatch: '**/api_vod_security.test.js',
       use: chromeConfig.use,
     },
   ],

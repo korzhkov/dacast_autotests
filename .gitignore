@@ -160,3 +160,4 @@ npm/
 # System files
 nohup.out
 
+.DS_Store
