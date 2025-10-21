@@ -122,7 +122,7 @@ const config = defineConfig({
     },
 
     {
-      name: 'api vod security',
+      name: 'api_vod_security',
       testMatch: '**/api_vod_security.test.js',
       use: chromeConfig.use,
     },
