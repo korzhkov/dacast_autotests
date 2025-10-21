@@ -112,13 +112,17 @@ test('Create stream test', async ({ page }) => {
 
     await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
     console.log('Clicked on Settings');
-    await page.locator('.mb2 > div > .sc-YysOf').first().click();
+
+    await page.getByTestId('liveRecordingToggleLabel').click();
     console.log('Clicked on Recordings');
     await page.waitForTimeout(2000);
-    await page.locator('.sc-bhqpjJ > .mb2 > div > .sc-YysOf').click();
+
+    await page.getByTestId('liveDvrToggleLabel').click();
     console.log('Clicked on DVR');
-    await expect(page.getByText('Changes have been saved')).toBeVisible({ timeout: 10000 });
-    console.log('DVR settings changed');
+    
+    // Wait for the success notification to appear
+    await page.waitForSelector('text=Changes have been saved', { state: 'visible', timeout: 10000 });
+    console.log('DVR settings saved successfully');
  
     // Navigate to the Live Streams page
     await page.getByRole('link', { name: 'Live Streams' }).click();
