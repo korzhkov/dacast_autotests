@@ -138,9 +138,7 @@ const UPDATE_BASE_TITLE = `Automated Stream Update ID: `;
 const UPDATE_DESCRIPTION = 'Updated description via automated test';
 
 // Test 1: POSITIVE POST - Initiate and upload VOD (expect 200 OK)
-test('POST VOD (1): should initiate and upload VOD successfully with correct credentials (200)', async ({
-  page,
-}) => {
+test('POST VOD (1): should initiate and upload VOD successfully with correct credentials (200)', async () => {
   // Set a higher timeout for the test which includes the upload
   test.setTimeout(60000);
 
@@ -182,6 +180,25 @@ test('POST VOD (1): should initiate and upload VOD successfully with correct cre
       `@sample_video.MOV`,
     );
 
+    // On Windows, wrap the URL in double quotes to prevent & from being interpreted as command separator
+    if (isWindows) {
+      // Extract the URL part (everything after -T filename and before any other flags or end of string)
+      // The pattern is: curl -k -T filename 'URL' or curl -k -T filename URL
+      finalUploadCmd = finalUploadCmd.replace(
+        /(-T\s+\S+)\s+'([^']+)'/,
+        '$1 "$2"'
+      ).replace(
+        /(-T\s+\S+)\s+([^\s-][^\s]*(?:\?[^\s]+)?)/,
+        (match, prefix, url) => {
+          // Only wrap if not already wrapped in quotes
+          if (!url.startsWith('"')) {
+            return `${prefix} "${url}"`;
+          }
+          return match;
+        }
+      );
+    }
+
     console.log('--- STEP 2: Execute file upload (sample_video.MOV) ---');
     await execAsync(finalUploadCmd);
     console.log(`VOD file upload command executed successfully.`);
@@ -191,10 +208,18 @@ test('POST VOD (1): should initiate and upload VOD successfully with correct cre
 });
 
 // Test 2: POSITIVE PUT - Update own video (expect 200 OK)
-test('PUT VOD (2): should update VOD title successfully with correct credentials (200)', async ({
-  page,
-}) => {
-  const url = `${BASE_URL}${PUT_ENDPOINT}${ownerVodId}`;
+test('PUT VOD (2): should update VOD title successfully with correct credentials (200)', async () => {
+  // Check that the VOD ID was created in the previous test
+  if (!createdVodId) {
+    throw new Error('No VOD ID available from Test 1 (POST). Test 1 must run before Test 2.');
+  }
+
+  // Wait 25 seconds for the VOD to be indexed after upload
+  console.log('Waiting 25 seconds for VOD to be indexed...');
+  await new Promise(resolve => setTimeout(resolve, 25000));
+  console.log('Proceeding with VOD update...');
+
+  const url = `${BASE_URL}${PUT_ENDPOINT}${createdVodId}`;
 
   // GENERATE A RANDOM ID RIGHT BEFORE THE REQUEST
   const randomId = generateRandomId();
@@ -222,14 +247,19 @@ test('PUT VOD (2): should update VOD title successfully with correct credentials
 
   expect(httpStatus).toBe(200);
 
+  // Debug: log the response body to see what API returns
+  console.log('\n=== PUT Response Body ===');
+  console.log(JSON.stringify(responseBody, null, 2));
+  console.log('========================\n');
+
   // Check that the response body contains the updated data, using the description field
   expect(responseBody.description).toBe(UPDATE_DESCRIPTION);
 });
 
+
+
 // Test 3: NEGATIVE PUT - Invalid API key (expect 403 Forbidden)
-test('PUT VOD (3): should fail with 403 when using an API Key from a different account', async ({
-  page,
-}) => {
+test('PUT VOD (3): should fail with 403 when using an API Key from a different account', async () => {
   const url = `${BASE_URL}${PUT_ENDPOINT}${ownerVodId}`;
 
   // Use a simple (non-dynamic) request for the negative test
@@ -253,9 +283,7 @@ test('PUT VOD (3): should fail with 403 when using an API Key from a different a
 });
 
 // Test 4: NEGATIVE PUT - Invalid VOD ID (expect 403 Forbidden)
-test('PUT VOD (4): should fail with 403 when using a VOD ID from a different account (403)', async ({
-  page,
-}) => {
+test('PUT VOD (4): should fail with 403 when using a VOD ID from a different account (403)', async () => {
   const url = `${BASE_URL}${PUT_ENDPOINT}${otherVodId}`;
 
   // Use a simple (non-dynamic) request for the negative test
@@ -278,9 +306,7 @@ test('PUT VOD (4): should fail with 403 when using a VOD ID from a different acc
 });
 
 // Test 5: POSITIVE GET - Retrieve own video information (expect 200 OK)
-test('GET VOD (5): should retrieve VOD info successfully with correct credentials (200)', async ({
-  page,
-}) => {
+test('GET VOD (5): should retrieve VOD info successfully with correct credentials (200)', async () => {
   const url = `${BASE_URL}${GET_ENDPOINT}${ownerVodId}`;
 
   const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET ${url} -H "X-Api-Key: ${ownerApiKey}" -H "X-Format: default"`;
@@ -299,9 +325,7 @@ test('GET VOD (5): should retrieve VOD info successfully with correct credential
 });
 
 // Test 6: NEGATIVE GET - Invalid API key (expect 403 Forbidden)
-test('GET VOD (6): should fail with 403 when trying to get info with an API Key from a different account', async ({
-  page,
-}) => {
+test('GET VOD (6): should fail with 403 when trying to get info with an API Key from a different account', async () => {
   const url = `${BASE_URL}${GET_ENDPOINT}${ownerVodId}`;
 
   // Use ANOTHER USER's API_KEY
@@ -313,9 +337,7 @@ test('GET VOD (6): should fail with 403 when trying to get info with an API Key 
 });
 
 // Test 7: NEGATIVE GET - Invalid VOD ID (expect 403 Forbidden)
-test('GET VOD (7): should fail with 403 when trying to get info about a VOD ID from a different account', async ({
-  page,
-}) => {
+test('GET VOD (7): should fail with 403 when trying to get info about a VOD ID from a different account', async () => {
   const url = `${BASE_URL}${GET_ENDPOINT}${otherVodId}`;
 
   // Use OUR OWN API_KEY but ANOTHER USER's VOD_ID
@@ -349,9 +371,7 @@ test('GET VOD (7): should fail with 403 when trying to get info about a VOD ID f
 // });
 
 // Test 9: NEGATIVE DELETE - Invalid API key (expect 403 Forbidden)
-test('DELETE VOD (9): should fail with 403 when using an API Key from a different account', async ({
-  page,
-}) => {
+test('DELETE VOD (9): should fail with 403 when using an API Key from a different account', async () => {
   const url = `${BASE_URL}${PUT_ENDPOINT}${ownerVodId}`;
 
   // Use ANOTHER USER's API_KEY but OUR OWN VOD_ID
@@ -364,9 +384,7 @@ test('DELETE VOD (9): should fail with 403 when using an API Key from a differen
 });
 
 // Test 10: NEGATIVE DELETE - Invalid VOD ID (expect 403 Forbidden)
-test('DELETE VOD (10): should fail with 403 when using a VOD ID from a different account', async ({
-  page,
-}) => {
+test('DELETE VOD (10): should fail with 403 when using a VOD ID from a different account', async () => {
   const url = `${BASE_URL}${PUT_ENDPOINT}${otherVodId}`;
 
   // Use OUR OWN API_KEY but ANOTHER USER's VOD_ID
