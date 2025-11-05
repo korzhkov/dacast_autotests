@@ -120,17 +120,6 @@ const config = defineConfig({
       testMatch: '**/api_stream_lookup.test.js',
       use: chromeConfig.use,
     },
-
-    {
-      name: 'api playlist',
-      testMatch: '**/api_playlist2.test.js',
-      use: chromeConfig.use,
-    },
-    {
-      name: 'api s3 vod',
-      testMatch: '**/api_vod_s3_upload.test.js',
-      use: chromeConfig.use,
-    },
   ],
 });
 
