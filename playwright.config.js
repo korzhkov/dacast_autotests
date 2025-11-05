@@ -123,7 +123,12 @@ const config = defineConfig({
 
     {
       name: 'api playlist',
-      testMatch: '**/api_playlist.test.js',
+      testMatch: '**/api_playlist2.test.js',
+      use: chromeConfig.use,
+    },
+    {
+      name: 'api s3 vod',
+      testMatch: '**/api_vod_s3_upload.test.js',
       use: chromeConfig.use,
     },
   ],
