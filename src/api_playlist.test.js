@@ -1,6 +1,8 @@
-const { test, expect } = require('@playwright/test'); // Используем Playwright import
+const { test, expect } = require('@playwright/test');
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const path = require('path');
+const fs = require('fs'); // Import fs module for file check
 const execAsync = promisify(exec);
 
 // Get environment from command line or default to prod
@@ -16,7 +18,9 @@ const apiKey =
     ? process.env._API_KEY
     : env === 'stage'
     ? process.env._API_KEY_STAGE
-    : process.env._API_KEY_DEV;
+    : process.env.hasOwnProperty('_API_KEY_DEV')
+    ? process.env._API_KEY_DEV
+    : process.env._API_KEY; // Fallback if _API_KEY_DEV is not set
 
 // Variables to store created resources
 let createdVodId = null;
@@ -29,62 +33,6 @@ const isWindows = process.platform === 'win32';
 
 // Delay function
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Polls the API using a GET request until the resource becomes available (HTTP 200).
- * @param {string} id Playlist ID or VOD ID to check.
- * @param {string} resourceType 'playlists' or 'vod'.
- * @param {number} maxAttempts Maximum number of attempts. (Default: 30)
- * @param {number} delayMs Delay between attempts in milliseconds. (Default: 10000ms)
- */
-const pollForResourceAvailability = async (
-  id,
-  resourceType,
-  maxAttempts = 30,
-  delayMs = 10000,
-) => {
-  // Use a reliable method for the base URL construction
-  const apiUrlBase = `https://${hostAPI}/v2/${resourceType}/${id}`;
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const totalWaitTime = (maxAttempts * delayMs) / 1000;
-    console.log(
-      `Polling for ${resourceType} ${id} availability (Attempt ${attempt}/${maxAttempts}). Max wait time: ${totalWaitTime} seconds.`,
-    );
-
-    try {
-      const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env, {
-        skipLogging: true,
-      });
-
-      if (httpStatus === 200) {
-        console.log(`${resourceType} ${id} is available (Status 200).`);
-        return true;
-      } else if (httpStatus === 404) {
-        console.log(
-          `${resourceType} ${id} not found yet (Status 404). Waiting...`,
-        );
-      } else {
-        console.warn(
-          `Polling received unexpected status ${httpStatus}. Waiting...`,
-        );
-      }
-    } catch (e) {
-      console.error(`Polling error: ${e.message}. Waiting...`);
-    }
-
-    if (attempt < maxAttempts) {
-      await delay(delayMs);
-    }
-  }
-
-  throw new Error(
-    `${resourceType} ${id} was not available after ${maxAttempts} attempts (${
-      (maxAttempts * delayMs) / 1000
-    } seconds timeout).`,
-  );
-};
 
 /**
  * Execute curl command and process response.
@@ -173,105 +121,354 @@ const executeCurlRequest = async (rawCurlCmd, api_key, env, options = {}) => {
   }
 };
 
+/**
+ * Polls the API using a GET request until the resource becomes available (HTTP 200).
+ * @param {string} id Playlist ID or VOD ID to check.
+ * @param {string} resourceType 'playlists' or 'vod'.
+ * @param {number} maxAttempts Maximum number of attempts. (Default: 30)
+ * @param {number} delayMs Delay between attempts in milliseconds. (Default: 10000ms)
+ */
+const pollForResourceAvailability = async (
+  id,
+  resourceType,
+  maxAttempts = 30,
+  delayMs = 10000,
+) => {
+  // Use a reliable method for the base URL construction
+  const apiUrlBase = `https://${hostAPI}/v2/${resourceType}/${id}`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const totalWaitTime = (maxAttempts * delayMs) / 1000;
+    console.log(
+      `Polling for ${resourceType} ${id} availability (Attempt ${attempt}/${maxAttempts}). Max wait time: ${totalWaitTime} seconds.`,
+    );
+
+    try {
+      const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env, {
+        skipLogging: true,
+      });
+
+      if (httpStatus === 200) {
+        console.log(`${resourceType} ${id} is available (Status 200).`);
+        return true;
+      } else if (httpStatus === 404) {
+        console.log(
+          `${resourceType} ${id} not found yet (Status 404). Waiting...`,
+        );
+      } else {
+        console.warn(
+          `Polling received unexpected status ${httpStatus}. Waiting...`,
+        );
+      }
+    } catch (e) {
+      console.error(`Polling error: ${e.message}. Waiting...`);
+    }
+
+    if (attempt < maxAttempts) {
+      await delay(delayMs);
+    }
+  }
+
+  throw new Error(
+    `${resourceType} ${id} was not available after ${maxAttempts} attempts (${
+      (maxAttempts * delayMs) / 1000
+    } seconds timeout).`,
+  );
+};
+
+/**
+ * Polls the VOD list via GET /v2/vod to find the created VOD by its title
+ * and returns the correct VOD ID.
+ * @param {string} title The title to search for.
+ * @param {number} maxAttempts Maximum number of attempts. (Default: 40)
+ * @param {number} delayMs Delay between attempts in milliseconds. (Default: 10000ms)
+ * @returns {Promise<string>} The ID of the found VOD.
+ */
+const searchForVodIdByTitle = async (
+  title,
+  maxAttempts = 40,
+  delayMs = 10000,
+) => {
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  // CRITICAL: Search URL uses title parameter
+  const apiUrlBase = `https://${hostAPI}/v2/vod?per_page=15&page=1&title=${encodeURIComponent(
+    title,
+  )}`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const totalWaitTime = (maxAttempts * delayMs) / 1000;
+    console.log(
+      `Searching for VOD with title "${title}" (Attempt ${attempt}/${maxAttempts}). Max wait time: ${totalWaitTime} seconds.`,
+    );
+
+    try {
+      const { httpStatus, response } = await executeCurlRequest(
+        curlCmd,
+        apiKey,
+        env,
+        { skipLogging: true },
+      );
+
+      if (httpStatus === 200 && response && Array.isArray(response.data)) {
+        // Filter the list to find the VOD with the exact title
+        const foundVod = response.data.find((vod) => vod.title === title);
+
+        if (foundVod && foundVod.id) {
+          console.log(`VOD found in list with ID: ${foundVod.id}`);
+          return foundVod.id;
+        } else {
+          console.log(
+            `VOD with title "${title}" not yet found in list. Waiting...`,
+          );
+        }
+      } else if (httpStatus !== 200) {
+        console.warn(
+          `Search polling received status ${httpStatus}. Waiting...`,
+        );
+      }
+    } catch (e) {
+      console.error(`Search polling error: ${e.message}. Waiting...`);
+    }
+
+    if (attempt < maxAttempts) {
+      await delay(delayMs);
+    }
+  }
+
+  throw new Error(
+    `VOD with title "${title}" was not found after ${maxAttempts} attempts. Search query used: ${apiUrlBase}`,
+  );
+};
+
+/**
+ * Polls the playlist resource until the specified VOD ID is found in the vod_ids array.
+ * @param {string} playlistId The playlist ID to check.
+ * @param {string} vodId The VOD ID expected in the playlist.
+ * @param {number} maxAttempts Maximum number of attempts. (Default: 7, reduced from 20)
+ * @param {number} delayMs Delay between attempts in milliseconds. (Default: 10000ms)
+ */
+const pollForVodInPlaylist = async (
+  playlistId,
+  vodId,
+  maxAttempts = 7, // Reduced from 20 to decrease overall wait time (200s -> 70s)
+  delayMs = 10000,
+) => {
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const apiUrlBase = `https://${hostAPI}/v2/playlists/${playlistId}`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const totalWaitTime = (maxAttempts * delayMs) / 1000;
+    console.log(
+      `Polling playlist ${playlistId} for VOD ${vodId} inclusion (Attempt ${attempt}/${maxAttempts}). Max wait time: ${totalWaitTime} seconds.`,
+    );
+
+    try {
+      const { httpStatus, response } = await executeCurlRequest(
+        curlCmd,
+        apiKey,
+        env,
+        { skipLogging: true },
+      );
+
+      if (
+        httpStatus === 200 &&
+        response &&
+        Array.isArray(response.vod_ids) &&
+        response.vod_ids.includes(vodId)
+      ) {
+        console.log(
+          `VOD ${vodId} successfully found in playlist ${playlistId}.`,
+        );
+        return true;
+      } else if (httpStatus === 200) {
+        // Log the current state of vod_ids for debugging
+        const vodIdsLog = response.vod_ids
+          ? Array.isArray(response.vod_ids)
+            ? response.vod_ids.join(', ')
+            : 'Field not an array'
+          : 'Field missing/empty';
+        console.log(
+          `VOD not yet included. Current vod_ids: ${vodIdsLog}. Waiting...`,
+        );
+      } else if (httpStatus === 404) {
+        console.log(
+          `Playlist ${playlistId} not found during polling. Waiting...`,
+        );
+      } else {
+        console.warn(
+          `Polling received unexpected status ${httpStatus}. Waiting...`,
+        );
+      }
+    } catch (e) {
+      console.error(`Polling error: ${e.message}. Waiting...`);
+    }
+
+    if (attempt < maxAttempts) {
+      await delay(delayMs);
+    }
+  }
+
+  throw new Error(
+    `VOD ${vodId} was not successfully included in playlist ${playlistId} after ${maxAttempts} attempts.`,
+  );
+};
+
 // --- API Tests ---
 
 /**
  * SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)
- * (POST /v2/vod with upload_type: 'curl', followed by PUT to presigned URL)
+ * 1. POST /v2/vod with upload_type: 'curl' and searchable title.
+ * 2. PUT file to presigned URL.
+ * 3. GET /v2/vod?title=... to find the real VOD ID.
  */
 test('SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)', async () => {
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
   }
 
-  // Используем имя файла, соответствующее рабочему коду VOD
-  const filename = 'sample_video.MOV';
-  const vodTitle = `Test VOD Curl Upload ${Date.now()}`;
+  // Define file names and paths
+  const vodFileName = 'sample_video.MOV';
+  // CRITICAL: Resolve the absolute path to ensure curl finds the file
+  const vodFilePath = path.resolve(process.cwd(), vodFileName);
+  // CRITICAL CHANGE: Use the file name as the title, as the search relies on it
+  const vodTitle = vodFileName;
+  const vodSource = vodFileName;
+
+  // NEW: Check if file exists before proceeding
+  if (!fs.existsSync(vodFilePath)) {
+    throw new Error(
+      `CRITICAL: The required VOD file "${vodFileName}" was not found at the absolute path: ${vodFilePath}. Please ensure it exists in your project root.`,
+    );
+  } else {
+    console.log(`File check successful: Found VOD file at ${vodFilePath}`);
+  }
 
   const urlSeparator = isWindows ? '^/^/' : '//';
 
-  // 1. INIT VOD: Use 'curl' upload type
+  // 1. INIT VOD: Use 'curl' upload type with a searchable title
   const initJsonBody = JSON.stringify({
-    title: vodTitle,
-    source: filename,
+    title: vodTitle, // Use filename as title for search
+    source: vodSource,
     upload_type: 'curl',
   });
 
-  // ИСПРАВЛЕНИЕ: Унифицированное экранирование JSON для POST/PUT запросов
+  // FIX: Unified JSON escaping for POST/PUT requests
   let dataArgumentInit;
   const escapedInitJsonBody = initJsonBody.replace(/"/g, '\\"');
   dataArgumentInit = `"${escapedInitJsonBody}"`;
 
-  // Используем /v2/vod
+  // Use /v2/vod endpoint
   const initCurlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/vod -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgumentInit}`;
 
   console.log(
-    '--- Step 1: Initialize VOD (POST /v2/vod with upload_type: "curl") ---',
+    '--- Step 1: Initialize VOD (POST /v2/vod with upload_type: "curl" and searchable title) ---',
   );
   const { httpStatus: initStatus, response: initResponse } =
     await executeCurlRequest(initCurlCmd, apiKey, env);
 
-  // Ожидаем 200 OK
+  // Expect 200 OK
   expect(initStatus).toBe(200);
 
   let uploadCurlCmd = null;
   if (initResponse && initResponse.id) {
-    createdVodId = initResponse.id;
-    console.log(`Created VOD ID: ${createdVodId}`);
+    // CRITICAL: Discard the initial ID as it is not linked to the final resource.
+    console.log(
+      `Initial VOD ID (DISCARDED): ${initResponse.id}. Will search for the real ID after upload.`,
+    );
   }
   if (initResponse && initResponse['curl-command']) {
     uploadCurlCmd = initResponse['curl-command'];
     console.log('Received S3 curl-command for upload.');
   }
 
-  expect(createdVodId).toBeDefined();
   expect(uploadCurlCmd).toBeDefined();
 
   // 2. UPLOAD VOD: Execute PUT to the presigned URL (File Upload)
   if (uploadCurlCmd) {
-    // Убеждаемся, что команда содержит -k (для игнорирования проблем с сертификатом)
-    let finalUploadCmd = uploadCurlCmd.includes(' -k ')
-      ? uploadCurlCmd
-      : uploadCurlCmd.replace('curl', 'curl -k');
+    let finalUploadCmd = uploadCurlCmd;
 
-    // КЛЮЧЕВОЙ ШАГ: Заменяем универсальный плейсхолдер файла на фактическое имя файла
-    // с префиксом @, как того требует curl для загрузки.
-    // Это использует флаг -T из команды API.
-    finalUploadCmd = finalUploadCmd.replace(
-      /@\/path\/to\/file|@path\/to\/file/, // Обрабатываем возможные плейсхолдеры
-      `@${filename}`,
+    // 2.1. Ensure -k flag is present (ignore certificate issues)
+    finalUploadCmd = finalUploadCmd.includes(' -k ')
+      ? finalUploadCmd
+      : finalUploadCmd.replace('curl', 'curl -k');
+
+    // 2.2. Add -f flag (fail silently) for stability
+    finalUploadCmd = finalUploadCmd.includes(' -f ')
+      ? finalUploadCmd
+      : finalUploadCmd.replace('curl -k', 'curl -k -f');
+
+    // 2.3. Replace file name/placeholder with the required ABSOLUTE PATH in quotes
+    const sourceNameInCommand = vodSource;
+
+    // Regex to find the "-T <filename_or_path>" part of the command
+    const escapedSourceName = sourceNameInCommand.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&',
+    );
+    const fileReferenceRegex = new RegExp(
+      `(-T\\s+)(@?\\/path\\/to\\/file|@?${escapedSourceName})`,
+      'i',
     );
 
+    // CRITICAL FIX: Replace the path placeholder with the ABSOLUTE PATH enclosed in quotes,
+    finalUploadCmd = finalUploadCmd.replace(
+      fileReferenceRegex,
+      `$1"${vodFilePath}"`,
+    );
+
+    // ADDITIONAL CHECK: If the API response did not include the Content-Type header, add it manually
+    if (!finalUploadCmd.includes('Content-Type')) {
+      // Add header for MOV (a frequent omission causing S3 errors)
+      finalUploadCmd = finalUploadCmd.replace(
+        '-H "X-Api-Key:',
+        '-H "Content-Type: video/quicktime" -H "X-Api-Key:',
+      );
+    }
+
     console.log(
-      `--- Step 2: Execute file upload (${filename}) via S3 presigned URL ---`,
+      `--- Step 2: Execute file upload (${vodFileName}) via S3 presigned URL ---`,
     );
     const maskedUploadCmd = finalUploadCmd.replace(apiKey, 'XXXXX');
     console.log('Executing S3 Upload:', maskedUploadCmd);
 
-    // *******************************************************************
-    // ИСПРАВЛЕНИЕ: Выполняем команду напрямую через execAsync.
-    // Это предотвращает нарушение подписи S3 (ошибка 403),
-    // которое возникало из-за добавления -w.
-    // *******************************************************************
     try {
-      // Выполняем команду загрузки файла.
+      // Execute the file upload command.
       await execAsync(finalUploadCmd);
       console.log(
         `VOD file upload command executed successfully (HTTP 200 assumed).`,
       );
     } catch (e) {
-      // Curl возвращает ошибку выполнения (exit code 22) для HTTP-ошибок S3.
+      // CRITICAL FIX: Log the detailed error message received from the shell
       console.error(
-        'S3 PUT Upload failed. This often indicates a missing file or a broken S3 signature.',
+        'S3 PUT Upload failed. This often indicates a missing file, a file permission error, a broken S3 signature, or Content-Type mismatch.',
       );
-      console.error('Error details:', e.message);
+      console.error('Raw system error message from exec:', e.message); // <-- Log raw system error
+      console.error(
+        `Error details: ${e.message}. The final curl command executed was: ${maskedUploadCmd}`,
+      );
+      // Updated error message for the user
       throw new Error(
-        'S3 VOD Upload failed during execution. Check if "sample_video.MOV" exists.',
+        `S3 VOD Upload failed during execution. CRITICAL: Check the console log for the "Raw system error message" to diagnose the exact issue (file not found, permission denied, or S3 signature error). File path used: ${vodFilePath}`,
       );
     }
   } else {
     throw new Error('Upload curl command not found in API response.');
   }
+
+  // 3. SEARCH FOR VOD ID: Find the real VOD resource by its title
+  console.log('--- Step 3: Polling VOD list to find final VOD ID by title ---');
+  // Use a long timeout here as processing starts after upload
+  createdVodId = await searchForVodIdByTitle(vodTitle);
+
+  if (!createdVodId) {
+    throw new Error(
+      `Failed to find the final VOD ID after successful upload and searching by title: ${vodTitle}`,
+    );
+  }
+  console.log(`VOD found and final VOD ID set to: ${createdVodId}`);
 });
 
 // --- START: Playlist Tests (These rely on createdVodId being ready) ---
@@ -300,7 +497,7 @@ test('Create playlist via API', async () => {
     description: 'Created via API test',
   });
 
-  // ИСПРАВЛЕНИЕ: Унифицированное экранирование JSON для POST/PUT запросов
+  // FIX: Unified JSON escaping for POST/PUT requests
   let dataArgument;
   const escapedJsonBody = rawJsonBody.replace(/"/g, '\\"');
   dataArgument = `"${escapedJsonBody}"`;
@@ -333,8 +530,8 @@ test('Create playlist via API', async () => {
 /**
  * TEST: Update playlist via API (Add VOD)
  *
- * Установлен большой таймаут Playwright (25 минут), чтобы дать достаточно времени
- * для завершения процесса обработки VOD (который занимает до 10 минут).
+ * Playwright timeout set high (25 minutes) to allow enough time
+ * for VOD processing to complete (which can take up to 10 minutes).
  */
 test('Update playlist via API (Add VOD)', async () => {
   if (!createdPlaylistId || !createdVodId) {
@@ -344,14 +541,13 @@ test('Update playlist via API (Add VOD)', async () => {
     return;
   }
 
-  // УСТАНОВКА ТАЙМАУТА Playwright: 25 минут (1,500,000 мс).
-  // Это предотвращает истечение таймаута теста во время длительного Polling'а VOD.
+  // Set Playwright timeout: 25 minutes (1,500,000 ms).
+  // This prevents the test from timing out during the long VOD Polling.
   test.setTimeout(1500000);
 
   // Polling: Wait for playlist availability
   await pollForResourceAvailability(createdPlaylistId, 'playlists');
 
-  // УВЕЛИЧЕНО ВРЕМЯ ОЖИДАНИЯ:
   // CRITICAL WAIT: Wait for VOD processing completion (20 minutes = 80 attempts * 15 seconds)
   await pollForResourceAvailability(createdVodId, 'vod', 80, 15000);
 
@@ -365,14 +561,14 @@ test('Update playlist via API (Add VOD)', async () => {
   const newTitle = `Updated playlist title via API ${timestamp}`;
   const urlSeparator = isWindows ? '^/^/' : '//';
 
-  // В V2 API для добавления VOD используется поле 'vod_ids'
+  // In V2 API, 'vod_ids' field is used to add VODs
   const rawJsonBody = JSON.stringify({
     description: newDescription,
     title: newTitle,
     vod_ids: [createdVodId],
   });
 
-  // ИСПРАВЛЕНИЕ: Унифицированное экранирование JSON для POST/PUT запросов
+  // FIX: Unified JSON escaping for POST/PUT requests
   let dataArgument;
   const escapedJsonBody = rawJsonBody.replace(/"/g, '\\"');
   dataArgument = `"${escapedJsonBody}"`;
@@ -443,8 +639,11 @@ test('Lookup playlist info via curl (Verify VOD addition)', async () => {
     return;
   }
 
-  // Polling: Wait for playlist availability
+  // Polling 1: Wait for playlist resource availability
   await pollForResourceAvailability(createdPlaylistId, 'playlists');
+
+  // Polling 2: CRITICAL NEW POLL: Wait for the VOD ID to appear in the vod_ids array (Now max 70s)
+  await pollForVodInPlaylist(createdPlaylistId, createdVodId);
 
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -469,7 +668,7 @@ test('Lookup playlist info via curl (Verify VOD addition)', async () => {
     expect(response.title).toContain('Updated playlist title via API');
 
     // CHECK: Verify that VOD ID was added to the playlist
-    expect(response.vod_ids).toBeDefined();
+    expect(response.vod_ids).toBeDefined(); // Now this should pass due to the new poll
     expect(Array.isArray(response.vod_ids)).toBe(true);
     expect(response.vod_ids).toContain(createdVodId);
   } catch (error) {
@@ -521,10 +720,6 @@ test('CLEANUP: Delete VOD created for Playlist Test', async () => {
     console.log('No VOD ID found to delete. Skipping VOD cleanup.');
     return;
   }
-
-  // УВЕЛИЧЕНО ВРЕМЯ ОЖИДАНИЯ:
-  // CRITICAL WAIT: Wait for VOD processing completion (20 minutes = 80 attempts * 15 seconds)
-  await pollForResourceAvailability(createdVodId, 'vod', 80, 15000);
 
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
