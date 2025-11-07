@@ -177,10 +177,12 @@ const searchForVodIdByTitle = async (
     title,
   )}`;
   
-  // WINDOWS FIX: Wrap URL in quotes to prevent & from being interpreted as command separator
+  // Platform-specific URL escaping:
+  // Windows: Wrap URL in double quotes to prevent & from being interpreted as command separator
+  // Linux: Wrap URL in single quotes to prevent & from being interpreted as command separator
   const curlCmd = isWindows
     ? `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrl}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`
-    : `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET ${apiUrl} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+    : `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET '${apiUrl}' -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const totalWaitTime = (maxAttempts * delayMs) / 1000;
@@ -700,8 +702,11 @@ test('Get playlist list and find created playlist', async () => {
     throw new Error('API key not found in environment variables');
   }
 
-  // Create curl command
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "https://${hostAPI}/v2/playlists?page=1&per_page=15" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  // Create curl command with platform-specific URL escaping
+  const playlistUrl = `https://${hostAPI}/v2/playlists?page=1&per_page=15`;
+  const curlCmd = isWindows
+    ? `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${playlistUrl}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`
+    : `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET '${playlistUrl}' -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   console.log('\n=== GET PLAYLIST LIST REQUEST ===');
   console.log('URL: https://' + hostAPI + '/v2/playlists?page=1&per_page=15');
