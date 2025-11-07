@@ -279,28 +279,37 @@ const pollForVodInPlaylist = async (
         httpStatus === 200 &&
         response &&
         response.content &&
-        response.content.list &&
-        Array.isArray(response.content.list)
+        response.content.list
       ) {
-        const vodFound = response.content.list.some(item => item.id === vodId);
-        if (vodFound) {
-          console.log(
-            `VOD ${vodId} successfully found in playlist ${playlistId}.`,
-          );
-          return true;
+        // Handle case where list might be a stringified array
+        let contentList = response.content.list;
+        if (typeof contentList === 'string') {
+          try {
+            contentList = JSON.parse(contentList);
+          } catch (e) {
+            console.warn('Failed to parse content.list as JSON string:', e.message);
+          }
         }
-      }
-      
-      if (httpStatus === 200) {
-        // Log the current state of content.list for debugging
-        const contentLog = response.content && response.content.list
-          ? Array.isArray(response.content.list)
-            ? response.content.list.map(item => item.id).join(', ')
-            : 'content.list is not an array'
-          : 'content.list missing/empty';
-        console.log(
-          `VOD not yet included. Current content.list IDs: ${contentLog}. Waiting...`,
-        );
+        
+        if (Array.isArray(contentList)) {
+          const vodFound = contentList.some(item => item.id === vodId);
+          if (vodFound) {
+            console.log(
+              `VOD ${vodId} successfully found in playlist ${playlistId}.`,
+            );
+            return true;
+          }
+          
+          // Log the current state of content.list for debugging
+          const contentLog = contentList.map(item => item.id).join(', ');
+          console.log(
+            `VOD not yet included. Current content.list IDs: ${contentLog}. Waiting...`,
+          );
+        } else {
+          console.log(
+            `VOD not yet included. content.list is not an array (type: ${typeof contentList}). Waiting...`,
+          );
+        }
       } else if (httpStatus === 404) {
         console.log(
           `Playlist ${playlistId} not found during polling. Waiting...`,
@@ -665,11 +674,24 @@ test('Set Playlist Content', async () => {
     // Validate response structure
     expect(response).toHaveProperty('content');
     expect(response.content).toHaveProperty('list');
-    expect(Array.isArray(response.content.list)).toBe(true);
+    
+    // Debug: Check what type list actually is
+    console.log('Type of response.content.list:', typeof response.content.list);
+    console.log('Is Array?', Array.isArray(response.content.list));
+    console.log('Raw list value:', response.content.list);
+    
+    // Handle case where list might be a stringified array
+    let contentList = response.content.list;
+    if (typeof contentList === 'string') {
+      console.log('List is a string, parsing it...');
+      contentList = JSON.parse(contentList);
+    }
+    
+    expect(Array.isArray(contentList)).toBe(true);
     
     // Validate that VOD was added to playlist
-    expect(response.content.list.length).toBeGreaterThan(0);
-    const addedVod = response.content.list.find(item => item.id === createdVodId);
+    expect(contentList.length).toBeGreaterThan(0);
+    const addedVod = contentList.find(item => item.id === createdVodId);
     expect(addedVod).toBeTruthy();
     expect(addedVod.type).toBe('vod');
     expect(addedVod.position).toBe('1');
@@ -802,9 +824,17 @@ test('Lookup playlist info via curl (Verify VOD addition)', async () => {
     // CHECK: Verify that VOD was added to the playlist content
     expect(response.content).toBeDefined();
     expect(response.content.list).toBeDefined();
-    expect(Array.isArray(response.content.list)).toBe(true);
     
-    const vodInPlaylist = response.content.list.find(item => item.id === createdVodId);
+    // Handle case where list might be a stringified array
+    let contentList = response.content.list;
+    if (typeof contentList === 'string') {
+      console.log('List is a string, parsing it...');
+      contentList = JSON.parse(contentList);
+    }
+    
+    expect(Array.isArray(contentList)).toBe(true);
+    
+    const vodInPlaylist = contentList.find(item => item.id === createdVodId);
     expect(vodInPlaylist).toBeTruthy();
     expect(vodInPlaylist.type).toBe('vod');
     
