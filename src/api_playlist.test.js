@@ -46,24 +46,6 @@ const executeCurlRequest = async (rawCurlCmd, api_key, env, options = {}) => {
   let finalCmd = rawCurlCmd;
   const { skipLogging } = options;
 
-  // --- START: Shell Fixes (Ensuring URL and & are handled) ---
-  if (isWindows) {
-    // Wrap URL in double quotes on Windows
-    const urlRegex = /(https?:\/\/[^\s]+)/;
-    const urlMatch = finalCmd.match(urlRegex);
-
-    if (urlMatch && urlMatch[0].includes('?')) {
-      const url = urlMatch[0];
-      if (!url.startsWith('"') && !url.endsWith('"')) {
-        finalCmd = finalCmd.replace(url, `"${url}"`);
-      }
-    }
-
-    // Escape '&' characters if not part of a quoted string
-    finalCmd = finalCmd.replace(/&/g, '^&');
-  }
-  // --- END: Shell Fixes ---
-
   // Output command to console (masking API key for security)
   const maskedCmd = finalCmd.replace(api_key, 'XXXXX');
   if (!skipLogging) {
@@ -190,26 +172,41 @@ const searchForVodIdByTitle = async (
   maxAttempts = 40,
   delayMs = 10000,
 ) => {
-  const urlSeparator = isWindows ? '^/^/' : '//';
-  // CRITICAL: Search URL uses title parameter
-  const apiUrlBase = `https://${hostAPI}/v2/vod?per_page=15&page=1&title=${encodeURIComponent(
+  // CRITICAL: Search URL uses title parameter - use /v2/vod endpoint for search
+  const apiUrl = `https://${hostAPI}/v2/vod?page=1&per_page=50&title=${encodeURIComponent(
     title,
   )}`;
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  
+  // WINDOWS FIX: Wrap URL in quotes to prevent & from being interpreted as command separator
+  const curlCmd = isWindows
+    ? `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrl}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`
+    : `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET ${apiUrl} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const totalWaitTime = (maxAttempts * delayMs) / 1000;
     console.log(
       `Searching for VOD with title "${title}" (Attempt ${attempt}/${maxAttempts}). Max wait time: ${totalWaitTime} seconds.`,
     );
+    
+    // Output command to console on first attempt (masking API key for security)
+    if (attempt === 1) {
+      const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+      console.log('Executing curl command:', maskedCmd);
+    }
 
     try {
-      const { httpStatus, response } = await executeCurlRequest(
+      const { httpStatus, response, responseBody } = await executeCurlRequest(
         curlCmd,
         apiKey,
         env,
         { skipLogging: true },
       );
+      
+      // Output response on first attempt
+      if (attempt === 1) {
+        console.log(`HTTP Status Code: ${httpStatus}`);
+        console.log('Response body (first 500 chars):', responseBody.substring(0, 500));
+      }
 
       if (httpStatus === 200 && response && Array.isArray(response.data)) {
         // Filter the list to find the VOD with the exact title
@@ -255,7 +252,6 @@ const pollForVodInPlaylist = async (
   maxAttempts = 7, // Reduced from 20 to decrease overall wait time (200s -> 70s)
   delayMs = 10000,
 ) => {
-  const urlSeparator = isWindows ? '^/^/' : '//';
   const apiUrlBase = `https://${hostAPI}/v2/playlists/${playlistId}`;
   const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "${apiUrlBase}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
@@ -266,32 +262,42 @@ const pollForVodInPlaylist = async (
     );
 
     try {
-      const { httpStatus, response } = await executeCurlRequest(
+      const { httpStatus, responseBody } = await executeCurlRequest(
         curlCmd,
         apiKey,
         env,
         { skipLogging: true },
       );
+      
+      // Parse responseBody if it's a string
+      const response = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
 
+      // Check if VOD is in content.list
       if (
         httpStatus === 200 &&
         response &&
-        Array.isArray(response.vod_ids) &&
-        response.vod_ids.includes(vodId)
+        response.content &&
+        response.content.list &&
+        Array.isArray(response.content.list)
       ) {
+        const vodFound = response.content.list.some(item => item.id === vodId);
+        if (vodFound) {
+          console.log(
+            `VOD ${vodId} successfully found in playlist ${playlistId}.`,
+          );
+          return true;
+        }
+      }
+      
+      if (httpStatus === 200) {
+        // Log the current state of content.list for debugging
+        const contentLog = response.content && response.content.list
+          ? Array.isArray(response.content.list)
+            ? response.content.list.map(item => item.id).join(', ')
+            : 'content.list is not an array'
+          : 'content.list missing/empty';
         console.log(
-          `VOD ${vodId} successfully found in playlist ${playlistId}.`,
-        );
-        return true;
-      } else if (httpStatus === 200) {
-        // Log the current state of vod_ids for debugging
-        const vodIdsLog = response.vod_ids
-          ? Array.isArray(response.vod_ids)
-            ? response.vod_ids.join(', ')
-            : 'Field not an array'
-          : 'Field missing/empty';
-        console.log(
-          `VOD not yet included. Current vod_ids: ${vodIdsLog}. Waiting...`,
+          `VOD not yet included. Current content.list IDs: ${contentLog}. Waiting...`,
         );
       } else if (httpStatus === 404) {
         console.log(
@@ -325,6 +331,9 @@ const pollForVodInPlaylist = async (
  * 3. GET /v2/vod?title=... to find the real VOD ID.
  */
 test('SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)', async () => {
+  // Set timeout to 450 seconds (7.5 minutes) to allow for VOD upload and indexing
+  test.setTimeout(450000);
+  
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
   }
@@ -346,8 +355,6 @@ test('SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)', async ()
     console.log(`File check successful: Found VOD file at ${vodFilePath}`);
   }
 
-  const urlSeparator = isWindows ? '^/^/' : '//';
-
   // 1. INIT VOD: Use 'curl' upload type with a searchable title
   const initJsonBody = JSON.stringify({
     title: vodTitle, // Use filename as title for search
@@ -361,7 +368,7 @@ test('SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)', async ()
   dataArgumentInit = `"${escapedInitJsonBody}"`;
 
   // Use /v2/vod endpoint
-  const initCurlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/vod -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgumentInit}`;
+  const initCurlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST "https://${hostAPI}/v2/vod" -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgumentInit}`;
 
   console.log(
     '--- Step 1: Initialize VOD (POST /v2/vod with upload_type: "curl" and searchable title) ---',
@@ -428,6 +435,16 @@ test('SETUP: Create VOD Resource for Playlist Test (Curl Upload Flow)', async ()
       );
     }
 
+    // WINDOWS FIX: Wrap the S3 URL in double quotes to prevent & from being interpreted as command separator
+    if (isWindows) {
+      // Extract the URL part (everything after -T filename and before any other flags or end of string)
+      // The S3 URL typically contains & characters that need to be escaped on Windows
+      finalUploadCmd = finalUploadCmd.replace(
+        /(-T\s+"[^"]+"\s+)'([^']+)'/,
+        '$1"$2"'
+      );
+    }
+
     console.log(
       `--- Step 2: Execute file upload (${vodFileName}) via S3 presigned URL ---`,
     );
@@ -490,8 +507,6 @@ test('Create playlist via API', async () => {
   const uniqueId = `TEST-PL-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
   // Create curl command
-  const urlSeparator = isWindows ? '^/^/' : '//';
-
   const rawJsonBody = JSON.stringify({
     title: `Test Playlist via API ${uniqueId}`,
     description: 'Created via API test',
@@ -502,7 +517,7 @@ test('Create playlist via API', async () => {
   const escapedJsonBody = rawJsonBody.replace(/"/g, '\\"');
   dataArgument = `"${escapedJsonBody}"`;
 
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/playlists -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgument}`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST "https://${hostAPI}/v2/playlists" -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgument}`;
 
   try {
     const { httpStatus, response } = await executeCurlRequest(
@@ -528,15 +543,61 @@ test('Create playlist via API', async () => {
 });
 
 /**
- * TEST: Update playlist via API (Add VOD)
+ * TEST: Update playlist via API
  *
- * Playwright timeout set high (25 minutes) to allow enough time
- * for VOD processing to complete (which can take up to 10 minutes).
+ * Updates playlist title and description.
  */
-test('Update playlist via API (Add VOD)', async () => {
+test('Update playlist via API', async () => {
+  if (!createdPlaylistId) {
+    console.log(
+      'Skipping Update Playlist test: Missing Playlist ID.',
+    );
+    return;
+  }
+
+  // Polling: Wait for playlist availability
+  await pollForResourceAvailability(createdPlaylistId, 'playlists');
+
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+
+  // Create curl command
+  const newDescription = 'Updated description via API';
+  const timestamp = new Date().toISOString();
+  const newTitle = `Updated playlist title via API ${timestamp}`;
+
+  const rawJsonBody = JSON.stringify({
+    description: newDescription,
+    title: newTitle,
+  });
+
+  
+  // FIX: Unified JSON escaping for POST/PUT requests
+  let dataArgument;
+  const escapedJsonBody = rawJsonBody.replace(/"/g, '\\"');
+  dataArgument = `"${escapedJsonBody}"`;
+
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT "https://${hostAPI}/v2/playlists/${createdPlaylistId}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgument}`;
+
+  try {
+    const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env);
+    expect(httpStatus).toBe(200);
+  } catch (error) {
+    throw error;
+  }
+});
+
+/**
+ * TEST: Set Playlist Content
+ *
+ * Adds VOD to the playlist using the correct endpoint.
+ * Waits for VOD processing completion before adding.
+ */
+test('Set Playlist Content', async () => {
   if (!createdPlaylistId || !createdVodId) {
     console.log(
-      'Skipping Update Playlist test: Missing Playlist ID or VOD ID.',
+      'Skipping Set Playlist Content test: Missing Playlist ID or VOD ID.',
     );
     return;
   }
@@ -555,31 +616,71 @@ test('Update playlist via API (Add VOD)', async () => {
     throw new Error('API key not found in environment variables');
   }
 
-  // Create curl command
-  const newDescription = 'Updated description via API (with VOD added)';
-  const timestamp = new Date().toISOString();
-  const newTitle = `Updated playlist title via API ${timestamp}`;
-  const urlSeparator = isWindows ? '^/^/' : '//';
+  // Create the content array with one VOD at position 1
+  const contentArray = [
+    {
+      id: createdVodId,
+      type: 'vod',
+      position: 1,
+    },
+  ];
 
-  // In V2 API, 'vod_ids' field is used to add VODs
+  // IMPORTANT: The 'content' field must be a STRING containing JSON, not an array!
+  // This matches the API format: {"content": "[{...}]"}
+  const contentString = JSON.stringify(contentArray);
+  
   const rawJsonBody = JSON.stringify({
-    description: newDescription,
-    title: newTitle,
-    vod_ids: [createdVodId],
+    content: contentString,
   });
 
-  // FIX: Unified JSON escaping for POST/PUT requests
-  let dataArgument;
-  const escapedJsonBody = rawJsonBody.replace(/"/g, '\\"');
-  dataArgument = `"${escapedJsonBody}"`;
+  // Use temporary file for data to avoid Windows escaping issues
+  const tmpFile = path.join(process.cwd(), `playlist_content_${Date.now()}.json`);
+  fs.writeFileSync(tmpFile, rawJsonBody, 'utf8');
+  
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT "https://${hostAPI}/v2/playlists/${createdPlaylistId}/content" -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d @"${tmpFile}"`;
 
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X PUT https:${urlSeparator}${hostAPI}/v2/playlists/${createdPlaylistId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d ${dataArgument}`;
+  console.log('\n=== SET PLAYLIST CONTENT REQUEST ===');
+  console.log('URL:', `https://${hostAPI}/v2/playlists/${createdPlaylistId}/content`);
+  console.log('Method: PUT');
+  console.log('Request Body (raw):', rawJsonBody);
+  console.log('Temp file:', tmpFile);
+  console.log('=====================================\n');
 
   try {
-    const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env);
+    const { httpStatus, responseBody } = await executeCurlRequest(curlCmd, apiKey, env);
+    
+    // Parse responseBody if it's a string
+    const response = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
+    
+    console.log('\n=== SET PLAYLIST CONTENT RESPONSE ===');
+    console.log('HTTP Status:', httpStatus);
+    console.log('Response Body:', JSON.stringify(response, null, 2));
+    console.log('======================================\n');
+    
+    // Validate HTTP status
     expect(httpStatus).toBe(200);
+    
+    // Validate response structure
+    expect(response).toHaveProperty('content');
+    expect(response.content).toHaveProperty('list');
+    expect(Array.isArray(response.content.list)).toBe(true);
+    
+    // Validate that VOD was added to playlist
+    expect(response.content.list.length).toBeGreaterThan(0);
+    const addedVod = response.content.list.find(item => item.id === createdVodId);
+    expect(addedVod).toBeTruthy();
+    expect(addedVod.type).toBe('vod');
+    expect(addedVod.position).toBe('1');
+    
+    console.log('Successfully added VOD to playlist');
+    console.log(`VOD ID ${createdVodId} found in playlist at position ${addedVod.position}`);
   } catch (error) {
     throw error;
+  } finally {
+    // Clean up temporary file
+    if (fs.existsSync(tmpFile)) {
+      fs.unlinkSync(tmpFile);
+    }
   }
 });
 
@@ -600,16 +701,28 @@ test('Get playlist list and find created playlist', async () => {
   }
 
   // Create curl command
-  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "https://${hostAPI}/v2/playlists?page=1&per_page=15" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "https:${urlSeparator}${hostAPI}/v2/playlists?page=1&per_page=15" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  console.log('\n=== GET PLAYLIST LIST REQUEST ===');
+  console.log('URL: https://' + hostAPI + '/v2/playlists?page=1&per_page=15');
+  console.log('Method: GET');
+  console.log('=================================\n');
 
   try {
-    const { httpStatus, response } = await executeCurlRequest(
+    const { httpStatus, responseBody } = await executeCurlRequest(
       curlCmd,
       apiKey,
       env,
     );
+    
+    // Parse responseBody if it's a string
+    const response = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
+    
+    console.log('\n=== GET PLAYLIST LIST RESPONSE ===');
+    console.log('HTTP Status:', httpStatus);
+    console.log('Response Body:', JSON.stringify(response, null, 2));
+    console.log('==================================\n');
+    
     expect(httpStatus).toBe(200);
 
     let foundPlaylist = null;
@@ -623,6 +736,8 @@ test('Get playlist list and find created playlist', async () => {
 
     expect(foundPlaylist).toBeTruthy();
     expect(foundPlaylist.id).toBe(createdPlaylistId);
+    
+    console.log(`Playlist ${createdPlaylistId} found in list`);
   } catch (error) {
     throw error;
   }
@@ -651,26 +766,44 @@ test('Lookup playlist info via curl (Verify VOD addition)', async () => {
 
   const playlistIdToUse = createdPlaylistId;
 
-  // Create curl command
-  const urlSeparator = isWindows ? '^/^/' : '//';
+  console.log('\n=== LOOKUP PLAYLIST INFO REQUEST ===');
+  console.log('URL: https://' + hostAPI + '/v2/playlists/' + playlistIdToUse);
+  console.log('Method: GET');
+  console.log('====================================\n');
 
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/playlists/${playlistIdToUse} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  // Create curl command
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET "https://${hostAPI}/v2/playlists/${playlistIdToUse}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   try {
-    const { httpStatus, response } = await executeCurlRequest(
+    const { httpStatus, responseBody } = await executeCurlRequest(
       curlCmd,
       apiKey,
       env,
     );
+    
+    // Parse responseBody if it's a string
+    const response = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
+    
+    console.log('\n=== LOOKUP PLAYLIST INFO RESPONSE ===');
+    console.log('HTTP Status:', httpStatus);
+    console.log('Response Body:', JSON.stringify(response, null, 2));
+    console.log('=====================================\n');
+    
     expect(httpStatus).toBe(200);
 
     expect(response.id).toBe(createdPlaylistId);
     expect(response.title).toContain('Updated playlist title via API');
 
-    // CHECK: Verify that VOD ID was added to the playlist
-    expect(response.vod_ids).toBeDefined(); // Now this should pass due to the new poll
-    expect(Array.isArray(response.vod_ids)).toBe(true);
-    expect(response.vod_ids).toContain(createdVodId);
+    // CHECK: Verify that VOD was added to the playlist content
+    expect(response.content).toBeDefined();
+    expect(response.content.list).toBeDefined();
+    expect(Array.isArray(response.content.list)).toBe(true);
+    
+    const vodInPlaylist = response.content.list.find(item => item.id === createdVodId);
+    expect(vodInPlaylist).toBeTruthy();
+    expect(vodInPlaylist.type).toBe('vod');
+    
+    console.log(`Playlist ${createdPlaylistId} contains VOD ${createdVodId}`);
   } catch (error) {
     throw error;
   }
@@ -694,13 +827,23 @@ test('CLEANUP: Delete playlist via API', async () => {
 
   const playlistIdToUse = createdPlaylistId;
 
-  // Create curl command
-  const urlSeparator = isWindows ? '^/^/' : '//';
+  console.log('\n=== DELETE PLAYLIST REQUEST ===');
+  console.log('URL: https://' + hostAPI + '/v2/playlists/' + playlistIdToUse);
+  console.log('Method: DELETE');
+  console.log('Playlist ID:', playlistIdToUse);
+  console.log('===============================\n');
 
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE https:${urlSeparator}${hostAPI}/v2/playlists/${playlistIdToUse} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  // Create curl command
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE "https://${hostAPI}/v2/playlists/${playlistIdToUse}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   try {
     const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env);
+    
+    console.log('\n=== DELETE PLAYLIST RESPONSE ===');
+    console.log('HTTP Status:', httpStatus);
+    console.log('Expected: 204 No Content');
+    console.log('================================\n');
+    
     expect(httpStatus).toBe(204);
 
     if (createdPlaylistId) {
@@ -726,13 +869,23 @@ test('CLEANUP: Delete VOD created for Playlist Test', async () => {
   }
 
   const vodIdToUse = createdVodId;
-  const urlSeparator = isWindows ? '^/^/' : '//';
+
+  console.log('\n=== DELETE VOD REQUEST ===');
+  console.log('URL: https://' + hostAPI + '/v2/vod/' + vodIdToUse);
+  console.log('Method: DELETE');
+  console.log('VOD ID:', vodIdToUse);
+  console.log('==========================\n');
 
   // Delete VOD via standard endpoint /v2/vod/{id}
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE https:${urlSeparator}${hostAPI}/v2/vod/${vodIdToUse} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE "https://${hostAPI}/v2/vod/${vodIdToUse}" -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
 
   try {
     const { httpStatus } = await executeCurlRequest(curlCmd, apiKey, env);
+
+    console.log('\n=== DELETE VOD RESPONSE ===');
+    console.log('HTTP Status:', httpStatus);
+    console.log('Expected: 204 No Content');
+    console.log('===========================\n');
 
     // Expect 204 No Content
     expect(httpStatus).toBe(204);

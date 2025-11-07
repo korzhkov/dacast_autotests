@@ -120,6 +120,11 @@ const config = defineConfig({
       testMatch: '**/api_stream_lookup.test.js',
       use: chromeConfig.use,
     },
+    {
+      name: 'api_playlist',
+      testMatch: '**/api_playlist.test.js',
+      use: chromeConfig.use,
+    },
   ],
 });
 
