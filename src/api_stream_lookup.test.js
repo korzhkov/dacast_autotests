@@ -21,7 +21,7 @@ const apiKey = env === 'prod' ? process.env._API_KEY : (env === 'stage' ? proces
 // Variable to store the created stream ID
 let createdStreamId = null;
 
-test('Create V2 stream via API', async () => {
+test('Create stream via API', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -117,8 +117,291 @@ test('Create V2 stream via API', async () => {
     console.error('Error executing curl command:', error.message);
     throw error;
   }
+
+    // Wait 20 seconds for stream to be indexed
+    console.log('Waiting 20 seconds for stream to be indexed...');
+    await new Promise(resolve => setTimeout(resolve, 20000));
+    console.log('Wait complete, proceeding to update stream test.');
+
 });
 
+// TODO: Remove this if-block when simulcast API is available in prod
+if (env !== 'prod') {
+  test('Add Simulcast Destination', async () => {
+  // Get credentials from environment variables
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+  
+  if (!createdStreamId) {
+    throw new Error('No stream ID available from previous test');
+  }
+  
+  // Construct curl command based on platform
+  const isWindows = process.platform === 'win32';
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"rtmp_url\\\":\\\"rtmp://live.twitch.tv/app/\\\",\\\"stream_key\\\":\\\"live_73276301_9jti7MgV3qhw8dKRMSqoscgnlJ4ttB2\\\"}"`;
+
+  // Output command to console (masking API key for security)
+  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing curl command:', maskedCmd);
+  
+  try {
+    console.log(`Executing request for environment: ${env}`);
+    const { stdout, stderr } = await execAsync(curlCmd);
+    
+    if (stderr) {
+      console.error('Curl stderr:', stderr);
+    }
+    
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(201); // 201 Created for successful POST request
+    
+    // Parse and format the JSON response for better readability
+    try {
+      const response = JSON.parse(responseBody);
+      
+      console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n');
+
+      // API returns empty object {} on success
+      console.log('Simulcast destination added successfully');
+
+    } catch (e) {
+      console.log('\n=== Raw API Response ===');
+      console.log(responseBody);
+      console.log('=======================\n');
+      throw e; // Re-throw the error to fail the test
+    }
+    
+  } catch (error) {
+    console.error('Error executing curl command:', error.message);
+    throw error;
+  }
+  
+  // Wait 5 seconds for simulcast destination to be indexed
+  console.log('Waiting 5 seconds for simulcast destination to be indexed...');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log('Wait complete, proceeding to next test.');
+  });
+
+  // Variable to store the simulcast destination ID
+  let simulcastId = null;
+  const expectedStreamKey = 'live_73276301_9jti7MgV3qhw8dKRMSqoscgnlJ4ttB2';
+
+  test('Get Simulcast Destinations list', async () => {
+  // Get credentials from environment variables
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+  
+  if (!createdStreamId) {
+    throw new Error('No stream ID available from previous test');
+  }
+  
+  // Construct curl command based on platform
+  const isWindows = process.platform === 'win32';
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  // Output command to console (masking API key for security)
+  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing curl command:', maskedCmd);
+  
+  try {
+    console.log(`Executing request for environment: ${env}`);
+    const { stdout, stderr } = await execAsync(curlCmd);
+    
+    if (stderr) {
+      console.error('Curl stderr:', stderr);
+    }
+    
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(200); // 200 OK for successful GET request
+    
+    // Parse and format the JSON response for better readability
+    try {
+      const response = JSON.parse(responseBody);
+      
+      console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n');
+
+      // Validate that response has data array
+      expect(response).toHaveProperty('data');
+      expect(Array.isArray(response.data)).toBe(true);
+
+      // Find the simulcast destination with our hardcoded stream_key
+      const foundSimulcast = response.data.find(item => item.stream_key === expectedStreamKey);
+      
+      console.log(`Searching for stream_key: ${expectedStreamKey}`);
+      console.log(`Total simulcast destinations in list: ${response.data.length}`);
+      
+      if (foundSimulcast) {
+        simulcastId = foundSimulcast.id;
+        console.log('Found simulcast destination:', {
+          id: foundSimulcast.id,
+          rtmp_url: foundSimulcast.rtmp_url,
+          stream_key: foundSimulcast.stream_key
+        });
+        console.log(`Simulcast ID saved: ${simulcastId}`);
+      } else {
+        console.log('Simulcast destination not found in list');
+        console.log('Available stream_keys:', response.data.map(s => s.stream_key));
+      }
+
+      // Validate that we found the simulcast destination
+      expect(foundSimulcast).toBeTruthy();
+      expect(foundSimulcast.stream_key).toBe(expectedStreamKey);
+      expect(foundSimulcast.rtmp_url).toBe('rtmp://live.twitch.tv/app/');
+
+    } catch (e) {
+      console.log('\n=== Raw API Response ===');
+      console.log(responseBody);
+      console.log('=======================\n');
+      throw e; // Re-throw the error to fail the test
+    }
+    
+  } catch (error) {
+    console.error('Error executing curl command:', error.message);
+    throw error;
+  }
+  });
+
+  test('Delete Simulcast Destination', async () => {
+  // Get credentials from environment variables
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+  
+  if (!createdStreamId) {
+    throw new Error('No stream ID available from previous test');
+  }
+  
+  if (!simulcastId) {
+    throw new Error('No simulcast ID available from previous test');
+  }
+  
+  // Construct curl command based on platform
+  const isWindows = process.platform === 'win32';
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations/${simulcastId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  // Output command to console (masking API key for security)
+  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing curl command:', maskedCmd);
+  
+  try {
+    console.log(`Executing request for environment: ${env}`);
+    const { stdout, stderr } = await execAsync(curlCmd);
+    
+    if (stderr) {
+      console.error('Curl stderr:', stderr);
+    }
+    
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(200); // 200 OK for successful DELETE request
+    
+    // Parse and format the JSON response for better readability
+    try {
+      const response = JSON.parse(responseBody);
+      
+      console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n');
+
+      // API returns empty object {} on success
+      console.log(`Successfully deleted simulcast destination ID: ${simulcastId}`);
+
+    } catch (e) {
+      console.log('\n=== Raw API Response ===');
+      console.log(responseBody);
+      console.log('=======================\n');
+      throw e; // Re-throw the error to fail the test
+    }
+    
+  } catch (error) {
+    console.error('Error executing curl command:', error.message);
+    throw error;
+  }
+  
+  // Wait 5 seconds for deletion to be processed
+  console.log('Waiting 5 seconds for deletion to be processed...');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log('Wait complete, verifying deletion...');
+  
+  // Verify deletion by getting the list again (reuse isWindows and urlSeparator from above)
+  const verifyCurlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+  
+  const maskedVerifyCmd = verifyCurlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing verification curl command:', maskedVerifyCmd);
+  
+  try {
+    const { stdout, stderr } = await execAsync(verifyCurlCmd);
+    
+    if (stderr) {
+      console.error('Verification curl stderr:', stderr);
+    }
+    
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+    
+    console.log(`Verification HTTP Status Code: ${httpStatus}`);
+    expect(httpStatus).toBe(200);
+    
+    const verifyResponse = JSON.parse(responseBody);
+    
+    console.log('\n=== Verification API Response ===');
+    console.log(JSON.stringify(verifyResponse, null, 2));
+    console.log('=================================\n');
+    
+    // Check that the deleted simulcast is NOT in the list
+    if (verifyResponse && verifyResponse.data && Array.isArray(verifyResponse.data)) {
+      const deletedSimulcastStillExists = verifyResponse.data.some(item => item.id === simulcastId);
+      
+      if (deletedSimulcastStillExists) {
+        throw new Error(`Simulcast destination ${simulcastId} still exists after deletion!`);
+      } else {
+        console.log(`✓ Verified: Simulcast destination ${simulcastId} successfully removed from list`);
+        console.log(`Current simulcast destinations count: ${verifyResponse.data.length}`);
+      }
+    } else {
+      console.log('✓ Verified: No simulcast destinations in list (expected after deletion)');
+    }
+    
+  } catch (error) {
+    console.error('Error during deletion verification:', error.message);
+    throw error;
+  }
+  });
+}
 
 test('Update stream via API', async () => {
   // Get credentials from environment variables
@@ -396,6 +679,53 @@ test('Lookup stream info via curl', async () => {
       // console.log('=======================\n');
       throw e; // Re-throw the error to fail the test
     }
+    
+  } catch (error) {
+    console.error('Error executing curl command:', error.message);
+    throw error;
+  }
+});
+
+test('CLEANUP: Delete stream via API', async () => {
+  // Get credentials from environment variables
+  if (!apiKey) {
+    throw new Error('API key not found in environment variables');
+  }
+  
+  if (!createdStreamId) {
+    throw new Error('No stream ID available from previous test');
+  }
+  
+  // Construct curl command based on platform
+  const isWindows = process.platform === 'win32';
+  const urlSeparator = isWindows ? '^/^/' : '//';
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X DELETE https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+
+  // Output command to console (masking API key for security)
+  const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
+  console.log('Executing curl command:', maskedCmd);
+  
+  try {
+    console.log(`Executing request for environment: ${env}`);
+    const { stdout, stderr } = await execAsync(curlCmd);
+    
+    if (stderr) {
+      console.error('Curl stderr:', stderr);
+    }
+    
+    // Extract HTTP status code from response
+    const lines = stdout.split('\n');
+    const statusLine = lines.find(line => line.startsWith('HTTPSTATUS:'));
+    const httpStatus = statusLine ? parseInt(statusLine.split(':')[1]) : null;
+    const responseBody = lines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n').trim();
+    
+    console.log(`HTTP Status Code: ${httpStatus}`);
+    console.log(`Response Body: "${responseBody}"`);
+    
+    // Validate HTTP status code
+    expect(httpStatus).toBe(204); // 204 No Content for successful DELETE request
+    
+    console.log(`Successfully deleted stream ID: ${createdStreamId}`);
     
   } catch (error) {
     console.error('Error executing curl command:', error.message);
