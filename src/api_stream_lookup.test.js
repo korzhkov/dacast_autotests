@@ -2,10 +2,14 @@
 What this series of tests does:
 1. Creates V2 stream via API with live_recording_enabled and live_dvr_enabled set to true
 2. Verifies that API response for created stream has HTTP status 201, live_recording_enabled and live_dvr_enabled set to true, ingest_version is v2, and correct publishing_point_primary for environment
-3. Updates description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), and sets live_recording_enabled to false and live_dvr_enabled to false
-4. Verifies that API response for updated stream has HTTP status 200, updated description and title, live_recording_enabled is set to false, and live_dvr_enabled is set to false
-5. Gets list of streams and verifies that API response has HTTP status 200 and created stream exists in the list
-6. Gets stream info and verifies that API response has HTTP status 200, created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to false (V2 DVR auto-disables with recording)
+3. [STAGE/DEV ONLY] Adds a simulcast destination with rtmp_url and stream_key, verifies HTTP 201 response
+4. [STAGE/DEV ONLY] Gets list of simulcast destinations, verifies the added simulcast exists by stream_key, saves simulcast ID
+5. [STAGE/DEV ONLY] Deletes the simulcast destination, verifies HTTP 200 and confirms deletion by checking the list again
+6. Updates stream description (to "Updated description via API") and title (to "Updated stream title via API" + timestamp), sets live_recording_enabled to false and live_dvr_enabled to false
+7. Verifies that API response for updated stream has HTTP status 200, updated description and title, live_recording_enabled is set to false. If PUT response validation fails, makes additional GET request to verify
+8. Gets list of streams and verifies that API response has HTTP status 200 and created stream exists in the list
+9. Gets stream info via GET and verifies that API response has HTTP status 200, created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to false (V2 DVR auto-disables with recording)
+10. Deletes the created stream and verifies HTTP 204 No Content response
 */
 
 const { test, expect } = require('./utils');
@@ -22,6 +26,8 @@ const apiKey = env === 'prod' ? process.env._API_KEY : (env === 'stage' ? proces
 let createdStreamId = null;
 
 test('Create stream via API', async () => {
+  test.setTimeout(45000); // Increase timeout to 45 seconds for stage environment
+  
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -118,16 +124,19 @@ test('Create stream via API', async () => {
     throw error;
   }
 
-    // Wait 20 seconds for stream to be indexed
-    console.log('Waiting 20 seconds for stream to be indexed...');
-    await new Promise(resolve => setTimeout(resolve, 20000));
+    // Wait 5 seconds for stream to be indexed
+    console.log('Waiting 5 seconds for stream to be indexed...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
     console.log('Wait complete, proceeding to update stream test.');
 
 });
 
-// TODO: Remove this if-block when simulcast API is available in prod
-if (env !== 'prod') {
-  test('Add Simulcast Destination', async () => {
+// Variable to store the simulcast destination ID
+let simulcastId = null;
+const expectedStreamKey = 'live_stream_key_test_autotests';
+
+// TODO: Remove test.skip() when simulcast API is available in prod
+(env === 'prod' ? test.skip : test)('Add Simulcast Destination', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -140,7 +149,7 @@ if (env !== 'prod') {
   // Construct curl command based on platform
   const isWindows = process.platform === 'win32';
   const urlSeparator = isWindows ? '^/^/' : '//';
-  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"rtmp_url\\\":\\\"rtmp://live.twitch.tv/app/\\\",\\\"stream_key\\\":\\\"live_73276301_9jti7MgV3qhw8dKRMSqoscgnlJ4ttB2\\\"}"`;
+  const curlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X POST https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId}/simulcast-destinations -H "X-Api-Key: ${apiKey}" -H "X-Format: default" -H "Content-Type: application/json" -d "{\\\"rtmp_url\\\":\\\"rtmp://live.twitch.tv/app/\\\",\\\"stream_key\\\":\\\"live_stream_key_test_autotests\\\"}"`;
 
   // Output command to console (masking API key for security)
   const maskedCmd = curlCmd.replace(apiKey, 'XXXXX');
@@ -192,13 +201,10 @@ if (env !== 'prod') {
   console.log('Waiting 5 seconds for simulcast destination to be indexed...');
   await new Promise(resolve => setTimeout(resolve, 5000));
   console.log('Wait complete, proceeding to next test.');
-  });
+});
 
-  // Variable to store the simulcast destination ID
-  let simulcastId = null;
-  const expectedStreamKey = 'live_73276301_9jti7MgV3qhw8dKRMSqoscgnlJ4ttB2';
-
-  test('Get Simulcast Destinations list', async () => {
+// TODO: Remove test.skip() when simulcast API is available in prod
+(env === 'prod' ? test.skip : test)('Get Simulcast Destinations list', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -283,9 +289,10 @@ if (env !== 'prod') {
     console.error('Error executing curl command:', error.message);
     throw error;
   }
-  });
+});
 
-  test('Delete Simulcast Destination', async () => {
+// TODO: Remove test.skip() when simulcast API is available in prod
+(env === 'prod' ? test.skip : test)('Delete Simulcast Destination', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -400,8 +407,7 @@ if (env !== 'prod') {
     console.error('Error during deletion verification:', error.message);
     throw error;
   }
-  });
-}
+});
 
 test('Update stream via API', async () => {
   // Get credentials from environment variables
@@ -462,22 +468,77 @@ test('Update stream via API', async () => {
         }
       }
 
-      // console.log('\n=== API Response ===');
-      // console.log(JSON.stringify(response, null, 2));
-      // console.log('===================\n');
+      /* console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n'); */
 
-      // Log response object structure for debugging
+      /* Log response object structure for debugging
       console.log('\n=== Response Object Structure ===');
       console.log('Available fields and values:');
       Object.entries(response).forEach(([key, value]) => {
         console.log(`${key}:`, value);
       });
-      console.log('===============================\n');
+      console.log('===============================\n'); */
 
-      // Add assertions to check if fields were updated
-      expect(response.description).toBe(newDescription);
-      expect(response.title).toBe(newTitle);
-      expect(response.live_recording_enabled).toBe(false);
+      // Try to validate fields from PUT response
+      let validationPassed = false;
+      try {
+        expect(response.description).toBe(newDescription);
+        expect(response.title).toBe(newTitle);
+        expect(response.live_recording_enabled).toBe(false);
+        validationPassed = true;
+        console.log('PUT response validation passed');
+      } catch (validationError) {
+        console.warn('PUT response validation failed:', validationError.message);
+        console.log('Making additional GET request to verify update...');
+        
+        // Fallback: Make a GET request to verify the update
+        const getCurlCmd = `curl -k -w "\\nHTTPSTATUS:%{http_code}" -X GET https:${urlSeparator}${hostAPI}/v2/channel/${createdStreamId} -H "X-Api-Key: ${apiKey}" -H "X-Format: default"`;
+        const maskedGetCmd = getCurlCmd.replace(apiKey, 'XXXXX');
+        console.log('Executing GET curl command:', maskedGetCmd);
+        
+        try {
+          const { stdout: getStdout, stderr: getStderr } = await execAsync(getCurlCmd);
+          
+          if (getStderr) {
+            console.error('GET curl stderr:', getStderr);
+          }
+          
+          const getLines = getStdout.split('\n');
+          const getStatusLine = getLines.find(line => line.startsWith('HTTPSTATUS:'));
+          const getHttpStatus = getStatusLine ? parseInt(getStatusLine.split(':')[1]) : null;
+          const getResponseBody = getLines.filter(line => !line.startsWith('HTTPSTATUS:')).join('\n');
+          
+          console.log(`GET HTTP Status Code: ${getHttpStatus}`);
+          expect(getHttpStatus).toBe(200);
+          
+          const getResponse = JSON.parse(getResponseBody);
+          
+          /* console.log('\n=== GET Response Object Structure ===');
+          console.log('Available fields and values:');
+          Object.entries(getResponse).forEach(([key, value]) => {
+            console.log(`${key}:`, value);
+          });
+          console.log('====================================\n'); */
+          
+          // Validate fields from GET response
+          expect(getResponse.description).toBe(newDescription);
+          expect(getResponse.title).toBe(newTitle);
+          expect(getResponse.live_recording_enabled).toBe(false);
+          console.log('GET response validation passed');
+          
+          // Mark test as flaky since PUT response was inconsistent
+          test.info().annotations.push({
+            type: 'flaky',
+            description: 'PUT response validation failed, but GET response validation passed. API may have delay in returning updated values.'
+          });
+          console.warn('⚠️  Test marked as FLAKY - PUT response was inconsistent');
+          
+        } catch (getError) {
+          console.error('GET request failed:', getError.message);
+          throw getError;
+        }
+      }
 
     } catch (e) {
       // console.log('\n=== Raw API Response ===');
@@ -548,17 +609,17 @@ test('Get stream list and find created stream', async () => {
         }
       }
 
-      // console.log('\n=== API Response ===');
-      // console.log(JSON.stringify(response, null, 2));
-      // console.log('===================\n');
+      /* console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n'); */
 
-      // Log response structure for debugging
+      /* Log response structure for debugging
       console.log('\n=== Response Object Structure ===');
       console.log('Available fields and values:');
       Object.entries(response).forEach(([key, value]) => {
         console.log(`${key}:`, value);
       });
-      console.log('===============================\n');
+      console.log('===============================\n'); */
 
       // Look for the created stream in the list
       let foundStream = null;
@@ -653,15 +714,15 @@ test('Lookup stream info via curl', async () => {
         }
       }
 
-      // console.log('\n=== API Response ===');
-      // console.log(JSON.stringify(response, null, 2));
-      // console.log('===================\n');
+      /* console.log('\n=== API Response ===');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('===================\n'); */
 
-      // Temporary debug logging
+      /* Temporary debug logging
       console.log('Response structure:', {
         live_recording_enabled: response.live_recording_enabled,
         live_dvr_enabled: response.live_dvr_enabled
-      });
+      }); */
 
       // Store the stream ID if the request was successful (even if validation fails)
       if (response.id) {

@@ -9,7 +9,7 @@ const path = require('path');
 class CustomReporter {
     constructor(options = {}) {
         this.config = require('../../playwright.config.js');
-        this.testResults = { passed: 0, failed: 0, skipped: 0 };
+        this.testResults = { passed: 0, failed: 0, skipped: 0, flaky: 0 };
         
         const defaultConfig = { outputDir: 'test-results' };
         this.resultsManager = new ResultsManager(options.config || defaultConfig);
@@ -98,8 +98,11 @@ class CustomReporter {
                 `${((new Date(endTime)).getTime() - (new Date(startTime)).getTime()) / 1000}s` : 
                 null;
 
+            // Check if test has 'flaky' annotation (annotations are in test object, not result)
+            const isFlakyTest = test.annotations?.some(annotation => annotation.type === 'flaky');
+
             statuses[testName] = {
-                status: result.status,
+                status: isFlakyTest ? 'flaky' : result.status,
                 startTime,
                 endTime,
                 duration
@@ -108,8 +111,15 @@ class CustomReporter {
             fs.writeFileSync(this.statusFile, JSON.stringify(statuses, null, 2));
 
             if (result.status === 'passed') {
-                this.testResults.passed++;
-                await sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
+                if (isFlakyTest) {
+                    this.testResults.flaky++;
+                    const flakyAnnotation = test.annotations.find(a => a.type === 'flaky');
+                    const flakyReason = flakyAnnotation?.description || 'Test marked as flaky';
+                    await sendToSlack(`Test passed but marked as FLAKY: ${test.title}\n${flakyReason}`, test.title, 'warning');
+                } else {
+                    this.testResults.passed++;
+                    await sendToSlack(`Test passed: ${test.title}`, test.title, 'info');
+                }
             } else if (result.status === 'failed' || result.status === 'timedOut') {
                 this.testResults.failed++;
                 await sendToSlack(`Test failed: ${test.title}`, test.title, 'error');
@@ -121,9 +131,10 @@ class CustomReporter {
 
     async onEnd() {
         const summary = `Test run completed.
-Total: ${this.testResults.passed + this.testResults.failed + this.testResults.skipped}
+Total: ${this.testResults.passed + this.testResults.failed + this.testResults.skipped + this.testResults.flaky}
 Passed: ${this.testResults.passed}
 Failed: ${this.testResults.failed}
+Flaky: ${this.testResults.flaky}
 Skipped: ${this.testResults.skipped}`;
 
         await sendToSlack(summary, 'Test Run Summary');
