@@ -486,6 +486,7 @@ test('Update stream via API', async () => {
         expect(response.description).toBe(newDescription);
         expect(response.title).toBe(newTitle);
         expect(response.live_recording_enabled).toBe(false);
+        expect(response.live_recording_enabled).toBe(true);
         validationPassed = true;
         console.log('PUT response validation passed');
       } catch (validationError) {
