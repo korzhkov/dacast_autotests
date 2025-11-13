@@ -135,8 +135,7 @@ test('Create stream via API', async () => {
 let simulcastId = null;
 const expectedStreamKey = 'live_stream_key_test_autotests';
 
-// TODO: Remove test.skip() when simulcast API is available in prod
-(env === 'prod' ? test.skip : test)('Add Simulcast Destination', async () => {
+test('Add Simulcast Destination', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -203,8 +202,7 @@ const expectedStreamKey = 'live_stream_key_test_autotests';
   console.log('Wait complete, proceeding to next test.');
 });
 
-// TODO: Remove test.skip() when simulcast API is available in prod
-(env === 'prod' ? test.skip : test)('Get Simulcast Destinations list', async () => {
+test('Get Simulcast Destinations list', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
@@ -291,8 +289,7 @@ const expectedStreamKey = 'live_stream_key_test_autotests';
   }
 });
 
-// TODO: Remove test.skip() when simulcast API is available in prod
-(env === 'prod' ? test.skip : test)('Delete Simulcast Destination', async () => {
+test('Delete Simulcast Destination', async () => {
   // Get credentials from environment variables
   if (!apiKey) {
     throw new Error('API key not found in environment variables');
