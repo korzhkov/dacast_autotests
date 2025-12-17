@@ -125,6 +125,11 @@ const config = defineConfig({
       testMatch: '**/api_playlist.test.js',
       use: chromeConfig.use,
     },
+    {
+      name: 'trimming_vod',
+      testMatch: '**/trimming_vod.test.js',
+      use: chromeConfig.use,
+    },
   ],
 });
 
