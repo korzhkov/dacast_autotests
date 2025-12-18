@@ -48,7 +48,9 @@ test('Cleaner', async ({ page }) => {
       const noItemsFound = await page.locator('text="No items matched your search"').count() > 0;
 
       if (!noItemsFound) {
-        await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
+        await page
+        .getByRole('row', { name: 'Title Size Status User' }).locator('label div')
+        .click();
         await page.getByRole('button', { name: 'Bulk Actions' }).click();
         await page.getByRole('list').getByText('Delete').click();
         await page.getByRole('button', { name: 'Delete' }).click();

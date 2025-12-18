@@ -4,7 +4,6 @@ const { uploadVideo } = require('./helpers/fileUploader');
 let clipboardy;
 const VIDEO_FILE_NAME = 'sample_video.MOV';
 const TRIMMED_VIDEO_FILE_NAME = '[TRIMMED] sample_video.MOV';
-const VIDEOS_URL = 'https://app.dacast.com/videos';
 
 test.beforeAll(async () => {
   clipboardy = await import('clipboardy');
@@ -228,10 +227,126 @@ test('Trimming VOD test', async ({ page }) => {
   );
 
   let totalCalculatedSizeMB = 0;
+  let originalTotalDurationSeconds = null;
+  let expectedTrimmedDurationSeconds = null;
+
+  // --- Step 0: Pre-check existing videos (reuse sample_video.MOV to save time) ---
+  let shouldUploadSourceVideo = true;
+  await test.step(
+    'Pre-check: reuse existing sample_video.MOV if present (Search by Title)',
+    async () => {
+      // Navigate to Videos page
+      await page.locator('#scrollbarWrapper').getByText('Videos').click();
+
+      // If account has no videos, we must upload
+      await Promise.race([
+        page.waitForSelector('#videosListTable', { timeout: 30000 }),
+        page.waitForSelector('text="Upload your first Video!"', {
+          timeout: 30000,
+        }),
+      ]);
+
+      const noVideosText = await page
+        .locator('text="Upload your first Video!"')
+        .count();
+
+      if (noVideosText > 0) {
+        console.log(
+          `[${new Date().toISOString()}] No videos found in account (fresh state). Will upload ${VIDEO_FILE_NAME}.`,
+        );
+        return;
+      }
+
+      const searchInput = page.getByPlaceholder('Search by Title...');
+      await expect(searchInput).toBeVisible({ timeout: 20000 });
+
+      // 1) Delete any leftovers from previous runs.
+      // Search by trimmed prefix (not full filename) and bulk-delete everything matched.
+      const trimmedPrefix = TRIMMED_VIDEO_FILE_NAME.split(' ')[0]; // e.g. "[TRIMMED]"
+      await searchInput.fill(trimmedPrefix);
+      await searchInput.press('Enter');
+      await page.waitForTimeout(5000);
+
+      const noTrimmedItemsFound =
+        (await page.locator('text="No items matched your search"').count()) > 0;
+
+      if (!noTrimmedItemsFound) {
+        console.log(
+          `[${new Date().toISOString()}] Found videos with trimmed prefix "${trimmedPrefix}". Deleting via Bulk Actions...`,
+        );
+
+
+        // await page.pause();
+
+        // Same bulk-delete flow as in cleaner.test.js
+        await page
+          .getByRole('row', { name: 'Title Size Status User' }).locator('label div')
+          .click();
+        await page.getByRole('button', { name: 'Bulk Actions' }).click();
+        await page.getByRole('list').getByText('Delete').click();
+        await page.getByRole('button', { name: 'Delete' }).click();
+        await expect(page.getByText('item(s) deleted')).toBeVisible({
+          timeout: 30000,
+        });
+
+        await page.waitForTimeout(5000);// Re-check trimmed prefix is gone
+        await page.reload();
+        await page.waitForTimeout(2000);
+        await searchInput.fill(trimmedPrefix);
+        await searchInput.press('Enter');
+        await page.waitForTimeout(5000);
+
+        const trimmedStillPresent =
+          (await page.locator('text="No items matched your search"').count()) ===
+          0;
+        if (trimmedStillPresent) {
+          throw new Error(
+            `Pre-check cleanup failed: videos with trimmed prefix "${trimmedPrefix}" still appear in search after deletion.`,
+          );
+        }
+
+        console.log(
+          `[${new Date().toISOString()}] Successfully deleted videos with trimmed prefix "${trimmedPrefix}".`,
+        );
+      }
+
+      // 2) If source video exists, reuse it and skip upload to save time.
+      await searchInput.fill(VIDEO_FILE_NAME);
+      await searchInput.press('Enter');
+      await page.waitForTimeout(5000);
+
+      const sourceFoundCount = await page
+        .locator('#videosListTable')
+        .getByRole('cell', { name: VIDEO_FILE_NAME })
+        .count();
+
+      if (sourceFoundCount > 0) {
+        shouldUploadSourceVideo = false;
+        console.log(
+          `[${new Date().toISOString()}] Found existing "${VIDEO_FILE_NAME}". Skipping upload and reusing it for trimming.`,
+        );
+      } else {
+        console.log(
+          `[${new Date().toISOString()}] "${VIDEO_FILE_NAME}" not found. Will upload it for trimming test.`,
+        );
+      }
+
+      // Clear search filter for subsequent steps
+      await searchInput.fill('');
+      await searchInput.press('Enter');
+    },
+  );
 
   // --- Step 1: Upload video ---
 
   await test.step('Upload video', async () => {
+    if (!shouldUploadSourceVideo) {
+      console.log(
+        `[${new Date().toISOString()}] Skipping upload step because "${VIDEO_FILE_NAME}" already exists.`,
+      );
+      return;
+    }
+
     await uploadVideo(page, VIDEO_FILE_NAME, clipboardy);
   });
 
@@ -320,6 +435,8 @@ test('Trimming VOD test', async ({ page }) => {
     const seconds = parseInt(durationMatch[2], 10);
     const totalSeconds = minutes * 60 + seconds;
     const trimSeconds = Math.floor(totalSeconds / 2);
+    originalTotalDurationSeconds = totalSeconds;
+    expectedTrimmedDurationSeconds = trimSeconds;
 
     const trimMinutes = Math.floor(trimSeconds / 60);
     const trimRemainingSeconds = trimSeconds % 60;
@@ -363,6 +480,66 @@ test('Trimming VOD test', async ({ page }) => {
       console.log('Trimming processing completed. Trimmed video is Online.');
     });
   });
+
+  await test.step('Verify trimmed video duration equals half of original', async () => {
+    if (
+      originalTotalDurationSeconds === null ||
+      expectedTrimmedDurationSeconds === null
+    ) {
+      throw new Error(
+        `Original/expected durations were not captured. originalTotalDurationSeconds=${originalTotalDurationSeconds}, expectedTrimmedDurationSeconds=${expectedTrimmedDurationSeconds}`,
+      );
+    }
+
+    // Go back to Videos list and open Preview for TRIMMED video
+    await page.locator('#scrollbarWrapper').getByText('Videos').click();
+    await page.waitForSelector('#videosListTable', {
+      state: 'visible',
+      timeout: 30000,
+    });
+
+    const trimmedRow = await page
+      .locator('#videosListTable tr')
+      .filter({ hasText: TRIMMED_VIDEO_FILE_NAME })
+      .first();
+    expect(await trimmedRow.count()).toBeGreaterThan(0);
+
+    const previewButton = trimmedRow.locator('div[class*="preview_vod"]');
+    await previewButton.click();
+
+    const previewTitleLocator = page
+      .locator('div.sc-bBeLUv')
+      .getByText('Preview', { exact: true });
+    await expect(previewTitleLocator).toBeVisible({ timeout: 15000 });
+
+    const trimmedDurationText = await page
+      .locator('p.sc-bkEOxz.kKcgma')
+      .filter({ hasText: 'Total duration:' })
+      .textContent();
+    const trimmedDurationMatch = trimmedDurationText.match(/(\d+):(\d+)/);
+
+    if (!trimmedDurationMatch) {
+      throw new Error(
+        `Could not parse trimmed total duration from text: ${trimmedDurationText}`,
+      );
+    }
+
+    const trimmedMinutes = parseInt(trimmedDurationMatch[1], 10);
+    const trimmedSeconds = parseInt(trimmedDurationMatch[2], 10);
+    const trimmedTotalSeconds = trimmedMinutes * 60 + trimmedSeconds;
+
+    console.log(
+      `[Duration Check] Original duration: ${originalTotalDurationSeconds}s. Expected trimmed: ${expectedTrimmedDurationSeconds}s. Actual trimmed: ${trimmedTotalSeconds}s.`,
+    );
+
+    // UI may round to nearest second; allow +/- 1 second tolerance.
+    expect(
+      Math.abs(trimmedTotalSeconds - expectedTrimmedDurationSeconds),
+    ).toBeLessThanOrEqual(1);
+  });
+
+  
+
 
   // --- Step 4: Navigate to Renditions, capture, and sum sizes ---
   await test.step('Navigate to TRIMMED video, open Renditions tab, check status, and capture size', async () => {
