@@ -147,24 +147,18 @@ async function pollRenditionsStatus(page) {
   let attempts = 0;
   let renditionsReady = false;
 
-  const sourceSizeContainer = page
-    .locator('div.sc-cPyLVi.cIinaZ')
-    .filter({ hasText: 'Source File Size' });
-  const sourceSizeTextLocator = sourceSizeContainer.locator('span.fQDYcr');
+  // Updated locators using specific classes from HTML
+  const sourceSizeTextLocator = page.locator('.sc-source-file-size').first();
 
   const sdRow = page
     .locator('#EncodedRenditionsTable tbody tr')
     .filter({ hasText: 'SD' })
     .first();
-  const sdStatusElement = sdRow.locator('td').nth(5);
-  const sdSizeElement = sdRow.locator('td').nth(3);
 
   const hdRow = page
     .locator('#EncodedRenditionsTable tbody tr')
     .filter({ hasText: 'HD' })
     .first();
-  const hdStatusElement = hdRow.locator('td').nth(5);
-  const hdSizeElement = hdRow.locator('td').nth(3);
 
   while (attempts < maxAttempts && !renditionsReady) {
     console.log(
@@ -179,16 +173,23 @@ async function pollRenditionsStatus(page) {
     const sourceSize = parseSizeToMB(sourceSizeText);
     const sourceReady = sourceSize > 0;
 
-    // 2. Check SD/HD statuses
-    const sdStatusText = (await sdStatusElement.textContent())?.trim() || 'N/A';
-    const hdStatusText = (await hdStatusElement.textContent())?.trim() || 'N/A';
-    const sdSizeText = (await sdSizeElement.textContent())?.trim();
-    const hdSizeText = (await hdSizeElement.textContent())?.trim();
+    // 2. Check SD/HD statuses using specific classes sc-ren-status and sc-ren-size
+    const sdStatusText =
+      (await sdRow.locator('.sc-ren-status').textContent())?.trim() || 'N/A';
+    const hdStatusText =
+      (await hdRow.locator('.sc-ren-status').textContent())?.trim() || 'N/A';
+    const sdSizeText = (
+      await sdRow.locator('.sc-ren-size').textContent()
+    )?.trim();
+    const hdSizeText = (
+      await hdRow.locator('.sc-ren-size').textContent()
+    )?.trim();
 
+    // In your HTML, finished status is "Encoded"
     const sdReady =
-      sdStatusText !== 'Processing' && sdSizeText && sdSizeText !== '0';
+      sdStatusText === 'Encoded' && sdSizeText && sdSizeText !== '0';
     const hdReady =
-      hdStatusText !== 'Processing' && hdSizeText && hdSizeText !== '0';
+      hdStatusText === 'Encoded' && hdSizeText && hdSizeText !== '0';
 
     if (sourceReady && sdReady && hdReady) {
       console.log(
@@ -197,7 +198,7 @@ async function pollRenditionsStatus(page) {
       renditionsReady = true;
     } else {
       console.log(
-        `[${new Date().toISOString()}] Waiting for encoding... Source Ready: ${sourceReady}. SD Ready: ${sdReady} (${sdStatusText}, ${sdSizeText} Mb). HD Ready: ${hdReady} (${hdStatusText}, ${hdSizeText} Mb).`,
+        `[${new Date().toISOString()}] Waiting for encoding... Source Ready: ${sourceReady}. SD Ready: ${sdReady} (${sdStatusText}, ${sdSizeText}). HD Ready: ${hdReady} (${hdStatusText}, ${hdSizeText}).`,
       );
       await page.reload();
       await page.getByRole('link', { name: 'Renditions Renditions' }).click();
@@ -232,110 +233,107 @@ test('Trimming VOD test', async ({ page }) => {
 
   // --- Step 0: Pre-check existing videos (reuse sample_video.MOV to save time) ---
   let shouldUploadSourceVideo = true;
-  await test.step(
-    'Pre-check: reuse existing sample_video.MOV if present (Search by Title)',
-    async () => {
-      // Navigate to Videos page
-      await page.locator('#scrollbarWrapper').getByText('Videos').click();
+  await test.step('Pre-check: reuse existing sample_video.MOV if present (Search by Title)', async () => {
+    // Navigate to Videos page
+    await page.locator('#scrollbarWrapper').getByText('Videos').click();
 
-      // If account has no videos, we must upload
-      await Promise.race([
-        page.waitForSelector('#videosListTable', { timeout: 30000 }),
-        page.waitForSelector('text="Upload your first Video!"', {
-          timeout: 30000,
-        }),
-      ]);
+    // If account has no videos, we must upload
+    await Promise.race([
+      page.waitForSelector('#videosListTable', { timeout: 30000 }),
+      page.waitForSelector('text="Upload your first Video!"', {
+        timeout: 30000,
+      }),
+    ]);
 
-      const noVideosText = await page
-        .locator('text="Upload your first Video!"')
-        .count();
+    const noVideosText = await page
+      .locator('text="Upload your first Video!"')
+      .count();
 
-      if (noVideosText > 0) {
-        console.log(
-          `[${new Date().toISOString()}] No videos found in account (fresh state). Will upload ${VIDEO_FILE_NAME}.`,
-        );
-        return;
-      }
+    if (noVideosText > 0) {
+      console.log(
+        `[${new Date().toISOString()}] No videos found in account (fresh state). Will upload ${VIDEO_FILE_NAME}.`,
+      );
+      return;
+    }
 
-      const searchInput = page.getByPlaceholder('Search by Title...');
-      await expect(searchInput).toBeVisible({ timeout: 20000 });
+    const searchInput = page.getByPlaceholder('Search by Title...');
+    await expect(searchInput).toBeVisible({ timeout: 20000 });
 
-      // 1) Delete any leftovers from previous runs.
-      // Search by trimmed prefix (not full filename) and bulk-delete everything matched.
-      const trimmedPrefix = TRIMMED_VIDEO_FILE_NAME.split(' ')[0]; // e.g. "[TRIMMED]"
+    // 1) Delete any leftovers from previous runs.
+    // Search by trimmed prefix (not full filename) and bulk-delete everything matched.
+    const trimmedPrefix = TRIMMED_VIDEO_FILE_NAME.split(' ')[0]; // e.g. "[TRIMMED]"
+    await searchInput.fill(trimmedPrefix);
+    await searchInput.press('Enter');
+    await page.waitForTimeout(5000);
+
+    const noTrimmedItemsFound =
+      (await page.locator('text="No items matched your search"').count()) > 0;
+
+    if (!noTrimmedItemsFound) {
+      console.log(
+        `[${new Date().toISOString()}] Found videos with trimmed prefix "${trimmedPrefix}". Deleting via Bulk Actions...`,
+      );
+
+      // --- CHANGE START: Flexible header locator to handle users with and without "User" column ---
+      await page
+        .getByRole('row', { name: /Title.*Size.*Status/ }) // Uses Regex to match regardless of "User" presence
+        .locator('label div')
+        .click();
+      // --- CHANGE END ---
+
+      await page.getByRole('button', { name: 'Bulk Actions' }).click();
+      await page.getByRole('list').getByText('Delete').click();
+      await page.getByRole('button', { name: 'Delete' }).click();
+      await expect(page.getByText('item(s) deleted')).toBeVisible({
+        timeout: 30000,
+      });
+
+      await page.waitForTimeout(5000); // Re-check trimmed prefix is gone
+      await page.reload();
+      await page.waitForTimeout(2000);
       await searchInput.fill(trimmedPrefix);
       await searchInput.press('Enter');
       await page.waitForTimeout(5000);
 
-      const noTrimmedItemsFound =
-        (await page.locator('text="No items matched your search"').count()) > 0;
-
-      if (!noTrimmedItemsFound) {
-        console.log(
-          `[${new Date().toISOString()}] Found videos with trimmed prefix "${trimmedPrefix}". Deleting via Bulk Actions...`,
-        );
-
-
-        // await page.pause();
-
-        // Same bulk-delete flow as in cleaner.test.js
-        await page
-          .getByRole('row', { name: 'Title Size Status User' }).locator('label div')
-          .click();
-        await page.getByRole('button', { name: 'Bulk Actions' }).click();
-        await page.getByRole('list').getByText('Delete').click();
-        await page.getByRole('button', { name: 'Delete' }).click();
-        await expect(page.getByText('item(s) deleted')).toBeVisible({
-          timeout: 30000,
-        });
-
-        await page.waitForTimeout(5000);// Re-check trimmed prefix is gone
-        await page.reload();
-        await page.waitForTimeout(2000);
-        await searchInput.fill(trimmedPrefix);
-        await searchInput.press('Enter');
-        await page.waitForTimeout(5000);
-
-        const trimmedStillPresent =
-          (await page.locator('text="No items matched your search"').count()) ===
-          0;
-        if (trimmedStillPresent) {
-          throw new Error(
-            `Pre-check cleanup failed: videos with trimmed prefix "${trimmedPrefix}" still appear in search after deletion.`,
-          );
-        }
-
-        console.log(
-          `[${new Date().toISOString()}] Successfully deleted videos with trimmed prefix "${trimmedPrefix}".`,
+      const trimmedStillPresent =
+        (await page.locator('text="No items matched your search"').count()) ===
+        0;
+      if (trimmedStillPresent) {
+        throw new Error(
+          `Pre-check cleanup failed: videos with trimmed prefix "${trimmedPrefix}" still appear in search after deletion.`,
         );
       }
 
-      // 2) If source video exists, reuse it and skip upload to save time.
-      await searchInput.fill(VIDEO_FILE_NAME);
-      await searchInput.press('Enter');
-      await page.waitForTimeout(5000);
+      console.log(
+        `[${new Date().toISOString()}] Successfully deleted videos with trimmed prefix "${trimmedPrefix}".`,
+      );
+    }
 
-      const sourceFoundCount = await page
-        .locator('#videosListTable')
-        .getByRole('cell', { name: VIDEO_FILE_NAME })
-        .count();
+    // 2) If source video exists, reuse it and skip upload to save time.
+    await searchInput.fill(VIDEO_FILE_NAME);
+    await searchInput.press('Enter');
+    await page.waitForTimeout(5000);
 
-      if (sourceFoundCount > 0) {
-        shouldUploadSourceVideo = false;
-        console.log(
-          `[${new Date().toISOString()}] Found existing "${VIDEO_FILE_NAME}". Skipping upload and reusing it for trimming.`,
-        );
-      } else {
-        console.log(
-          `[${new Date().toISOString()}] "${VIDEO_FILE_NAME}" not found. Will upload it for trimming test.`,
-        );
-      }
+    const sourceFoundCount = await page
+      .locator('#videosListTable')
+      .getByRole('cell', { name: VIDEO_FILE_NAME })
+      .count();
 
-      // Clear search filter for subsequent steps
-      await searchInput.fill('');
-      await searchInput.press('Enter');
-    },
-  );
+    if (sourceFoundCount > 0) {
+      shouldUploadSourceVideo = false;
+      console.log(
+        `[${new Date().toISOString()}] Found existing "${VIDEO_FILE_NAME}". Skipping upload and reusing it for trimming.`,
+      );
+    } else {
+      console.log(
+        `[${new Date().toISOString()}] "${VIDEO_FILE_NAME}" not found. Will upload it for trimming test.`,
+      );
+    }
+
+    // Clear search filter for subsequent steps
+    await searchInput.fill('');
+    await searchInput.press('Enter');
+  });
 
   // --- Step 1: Upload video ---
 
@@ -407,21 +405,26 @@ test('Trimming VOD test', async ({ page }) => {
     await previewButton.click();
     console.log('Clicked on Preview button');
 
+    // Using semantic locator for Preview title
     const previewTitleLocator = page
-      .locator('div.sc-bBeLUv')
-      .getByText('Preview', { exact: true });
+      .locator('span')
+      .filter({ hasText: /^\s*Preview\s*$/ })
+      .first();
     await expect(previewTitleLocator).toBeVisible({ timeout: 15000 });
     console.log('Preview panel is successfully opened on the Videos page.');
 
     const trimmingSectionLocator = page
-      .locator('div.sc-fsvrbR.ibYPzY')
-      .getByText('Video Trimming');
+      .locator('div')
+      .filter({ hasText: 'Video Trimming' })
+      .first();
     await expect(trimmingSectionLocator).toBeVisible({ timeout: 10000 });
     console.log('Video Trimming section is visible.');
 
+    // Stable locator for Total duration text
     const totalDurationText = await page
-      .locator('p.sc-bkEOxz.kKcgma')
+      .locator('p')
       .filter({ hasText: 'Total duration:' })
+      .first()
       .textContent();
     const durationMatch = totalDurationText.match(/(\d+):(\d+)/);
 
@@ -448,9 +451,12 @@ test('Trimming VOD test', async ({ page }) => {
       `Calculated total duration: ${totalSeconds}s. Trimming End Time set to: ${trimTimeValue}`,
     );
 
-    const endTimeInput = page.locator(
-      'div.sc-dhFUGM.tnSmW div:nth-child(2) input',
-    );
+    // Finding input by context (second input in trimming group)
+    const endTimeInput = page
+      .locator('div')
+      .filter({ hasText: /^End Time$/ })
+      .locator('input');
+    await expect(endTimeInput).toBeVisible({ timeout: 10000 });
     const applyTrimmingButton = page.getByRole('button', {
       name: 'Apply Trimming',
     });
@@ -508,13 +514,14 @@ test('Trimming VOD test', async ({ page }) => {
     await previewButton.click();
 
     const previewTitleLocator = page
-      .locator('div.sc-bBeLUv')
-      .getByText('Preview', { exact: true });
+      .getByText('Preview', { exact: true })
+      .first();
     await expect(previewTitleLocator).toBeVisible({ timeout: 15000 });
 
     const trimmedDurationText = await page
-      .locator('p.sc-bkEOxz.kKcgma')
+      .locator('p')
       .filter({ hasText: 'Total duration:' })
+      .first()
       .textContent();
     const trimmedDurationMatch = trimmedDurationText.match(/(\d+):(\d+)/);
 
@@ -537,9 +544,6 @@ test('Trimming VOD test', async ({ page }) => {
       Math.abs(trimmedTotalSeconds - expectedTrimmedDurationSeconds),
     ).toBeLessThanOrEqual(1);
   });
-
-  
-
 
   // --- Step 4: Navigate to Renditions, capture, and sum sizes ---
   await test.step('Navigate to TRIMMED video, open Renditions tab, check status, and capture size', async () => {
@@ -590,11 +594,8 @@ test('Trimming VOD test', async ({ page }) => {
 
     // --- 8. Capture Sizes and Summation ---
 
-    // 8.1. Capture Source File Size
-    const sourceSizeContainer = page
-      .locator('div.sc-cPyLVi.cIinaZ')
-      .filter({ hasText: 'Source File Size' });
-    const sourceSizeTextLocator = sourceSizeContainer.locator('span.fQDYcr');
+    // 8.1. Capture Source File Size (using specific class sc-source-file-size)
+    const sourceSizeTextLocator = page.locator('.sc-source-file-size').first();
 
     const sourceSizeText = await sourceSizeTextLocator.textContent({
       timeout: 5000,
@@ -607,13 +608,14 @@ test('Trimming VOD test', async ({ page }) => {
     );
     totalCalculatedSizeMB += sourceSizeMB;
 
-    // 8.2. Capture SD Size
+    // 8.2. Capture SD Size (using specific class sc-ren-size)
     const sdRow = page
       .locator('#EncodedRenditionsTable tbody tr')
       .filter({ hasText: 'SD' })
       .first();
-    const sdSizeElement = sdRow.locator('td').nth(3);
-    const sdSizeText = await sdSizeElement.textContent({ timeout: 5000 });
+    const sdSizeText = await sdRow
+      .locator('.sc-ren-size')
+      .textContent({ timeout: 5000 });
     const sdSizeMB = parseSizeToMB(sdSizeText);
     console.log(
       `[Renditions] Captured SD Size: ${sdSizeText.trim()} MB (${sdSizeMB.toFixed(
@@ -622,13 +624,14 @@ test('Trimming VOD test', async ({ page }) => {
     );
     totalCalculatedSizeMB += sdSizeMB;
 
-    // 8.3. Capture HD Size
+    // 8.3. Capture HD Size (using specific class sc-ren-size)
     const hdRow = page
       .locator('#EncodedRenditionsTable tbody tr')
       .filter({ hasText: 'HD' })
       .first();
-    const hdSizeElement = hdRow.locator('td').nth(3);
-    const hdSizeText = await hdSizeElement.textContent({ timeout: 5000 });
+    const hdSizeText = await hdRow
+      .locator('.sc-ren-size')
+      .textContent({ timeout: 5000 });
     const hdSizeMB = parseSizeToMB(hdSizeText);
     console.log(
       `[Renditions] Captured HD Size: ${hdSizeText.trim()} MB (${hdSizeMB.toFixed(
@@ -675,11 +678,8 @@ test('Trimming VOD test', async ({ page }) => {
 
     await expect(trimmedVideoRow).toBeVisible({ timeout: 10000 });
 
-    // 4. Extract Size from the "Size" column (index 2)
-    const tableSizeElement = trimmedVideoRow
-      .locator('td')
-      .nth(2)
-      .locator('span.bTkLiT');
+    // 4. Extract Size from the "Size" column (index 2) - using column index for stability
+    const tableSizeElement = trimmedVideoRow.locator('td').nth(2);
 
     const tableSizeText = await tableSizeElement.textContent();
     const tableSizeMB = parseSizeToMB(tableSizeText);
