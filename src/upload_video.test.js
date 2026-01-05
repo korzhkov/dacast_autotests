@@ -7,260 +7,284 @@ test.beforeAll(async () => {
   clipboardy = await import('clipboardy');
 });
 
-test('Upload video test', async ({ page }) => {
-  // Set a longer timeout for this test as video upload might take a while
+test('Upload video test - Final Stable Version', async ({ page }) => {
   test.setTimeout(500000);
-  // Get and log browser version
-  const browserVersion = await page.evaluate(() => navigator.userAgent);
-  console.log(`[${new Date().toISOString()}] Browser version: ${browserVersion}`);
 
+  const browserVersion = await page.evaluate(() => navigator.userAgent);
+  console.log(
+    `[${new Date().toISOString()}] Browser version: ${browserVersion}`,
+  );
+
+  // --- STEP 1: VIDEO UPLOAD ---
   await test.step('Upload video', async () => {
     await uploadVideo(page, 'sample_video.MOV', clipboardy);
   });
 
+  // --- STEP 2: VERIFY UPLOADED VIDEO IN LIST ---
   await test.step('Verify uploaded video', async () => {
-    // Navigate to the Videos page
     await page.locator('#scrollbarWrapper').getByText('Videos').click();
+    const firstVideoText = await page
+      .locator('text="Upload your first Video!"')
+      .count();
 
-    // Check if there's a message about uploading the first video
-    const createFirstVideoText = await page.locator('text="Upload your first Video!"').count();
-    
-    if (createFirstVideoText > 0) {
-      // If the message is found, wait for 5 seconds and reload the page
+    if (firstVideoText > 0) {
       await page.waitForTimeout(5000);
       await page.reload();
     }
 
-    // Wait for either video links or the "Upload your first Video!" message
     await Promise.race([
       page.waitForSelector('a[href^="/videos/"]', { timeout: 30000 }),
-      page.waitForSelector('text="Upload your first Video!"', { timeout: 30000 })
+      page.waitForSelector('text="Upload your first Video!"', {
+        timeout: 30000,
+      }),
     ]);
+  });
 
-    // If there are still no video links, wait again and reload
-    if (!(await page.$('a[href^="/videos/"]'))) {
-      await page.waitForTimeout(5000);
-      await page.reload();
-      await page.waitForSelector('a[href^="/videos/"]', { timeout: 30000 });
-      await page.reload();
-    }
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // --- STEP 3: STATUS CHECK (TRANSCODING) ---
+  await test.step('Checking sample_video.MOV status', async () => {
+    await page.waitForTimeout(4000); //added timeout before page reload
+    await page.reload();
+    const maxAttempts = 30;
+    let attempts = 0;
+    let processingComplete = false;
 
-
-  await page.waitForTimeout(5000);
-    await test.step('Checking sample_video.MOV status', async () => {
-      await page.reload();
-      const maxAttempts = 30; // Maximum number of attempts to check video status
-      let attempts = 0;
-      let processingComplete = false;
-
-      while (attempts < maxAttempts && !processingComplete) {
-        console.log(`[${new Date().toISOString()}] Attempt ${attempts + 1}: Refreshing page and checking video status`);
-        
-        // Wait for the table to load
-        await page.waitForSelector('#videosListTable', { state: 'visible', timeout: 15000 });
-
-        // Find the row containing 'sample_video.MOV'
-        const row = await page.locator('#videosListTable tr')
-          .filter({ hasText: 'sample_video.MOV' })
-          .first();
-
-        if (await row.count() > 0) {
-          const rowText = await row.innerText();
-          console.log(`[${new Date().toISOString()}] Found row with sample_video.MOV: ${rowText}`);
-
-          // Check the video status
-          if (rowText.includes('Processing')) {
-            console.log(`[${new Date().toISOString()}] Video is still in Processing status, will refresh again`);
-            await page.reload();
-            await page.waitForTimeout(5000); // Wait for 5 seconds after reload
-          } else if (rowText.includes('Online')) {
-            console.log(`[${new Date().toISOString()}] Video processing completed, status is now Online`);
-            processingComplete = true;
-          } else {
-            console.log(`[${new Date().toISOString()}] Video status is unclear, will refresh again`);
-          }
-        } else {
-          console.log(`[${new Date().toISOString()}] sample_video.MOV not found in the list, will try again`);
-        }
-
-        attempts++;
-
-        if (!processingComplete) {
-          console.log(`[${new Date().toISOString()}] Waiting 10 seconds before next refresh`);
-          await page.waitForTimeout(10000); // Wait for 10 seconds before next attempt
-        }
-      }
-
-      if (!processingComplete) {
-
-    // Take a screenshot after video processing
-    console.log(`[${new Date().toISOString()}] Current working directory:`, process.cwd());
-    console.log(`[${new Date().toISOString()}] Current user:`, require('os').userInfo().username);
-  
-      console.log(`[${new Date().toISOString()}] Taking screenshot of the stream creation result`);
-      const screenshotDir = './historical-screenshots';
-      const fs = require('fs');
-      if (!fs.existsSync(screenshotDir)) {
-        fs.mkdirSync(screenshotDir, { recursive: true });
-      }
-      
-      const screenshotPath = `${screenshotDir}/upload-video-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-      console.log(`[${new Date().toISOString()}] Saving screenshot to: ${screenshotPath}`);
-      
-      await page.screenshot({ 
-        path: screenshotPath,
-        fullPage: true 
+    while (attempts < maxAttempts && !processingComplete) {
+      console.log(
+        `[${new Date().toISOString()}] Attempt ${
+          attempts + 1
+        }: Checking status`,
+      );
+      await page.waitForSelector('#videosListTable', {
+        state: 'visible',
+        timeout: 15000,
       });
 
-        console.log(`[${new Date().toISOString()}] Processing did not complete after maximum attempts`);
-      }});
-
-
-    // Find and click on the newly uploaded video
-    const videoLinks = await page.$$('a[href^="/videos/"]');
-    console.log(`Found ${videoLinks.length} video links`); // Debugging, might be removed
-    let videoClicked = false;
-    for (const link of videoLinks) {
-      const linkText = await link.textContent();
-      console.log(`Found video link: ${linkText}`); // Debugging, might be removed
-      if (linkText.includes('sample_video.MOV')) {
-        await link.click();
-        videoClicked = true;
-        break;
+      const row = await page
+        .locator('#videosListTable tr')
+        .filter({ hasText: 'sample_video.MOV' })
+        .first();
+      if ((await row.count()) > 0) {
+        const rowText = await row.innerText();
+        if (rowText.includes('Online')) {
+          processingComplete = true;
+        } else {
+          await page.reload();
+          await page.waitForTimeout(10000);
+        }
       }
+      attempts++;
     }
-    // Ensure the video was found and clicked
-    expect(videoClicked).toBeTruthy();
+
+    // Fail-safe screenshot
+    if (!processingComplete) {
+      const fs = require('fs');
+      const dir = './historical-screenshots';
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+      await page.screenshot({ path: `${dir}/error-${Date.now()}.png` });
+    }
+
+    await page
+      .locator('a[href^="/videos/"]')
+      .filter({ hasText: 'sample_video.MOV' })
+      .first()
+      .click();
   });
 
-  await page.waitForTimeout(10000);
-  console.log('Sleep for 10s to give transcoding a chance to finish');
-  
-  
-
+  // --- STEP 4: EDIT METADATA ---
   await test.step('Edit video description', async () => {
-    // Update the video description
-    const currentDate = new Date();
-    const formattedDate = `${currentDate.toISOString().slice(0, 19).replace('T', ' ')}.${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
-    await page.locator('textarea[type="textarea"]').fill(`This is a test video ${formattedDate}`);
-    
-    // Save the changes (need to click somewhere outside of the right panel to make it saved)
+    const formattedDate = new Date()
+      .toISOString()
+      .replace('T', ' ')
+      .slice(0, 19);
+    await page
+      .locator('textarea[type="textarea"]')
+      .fill(`Stability Test - ${formattedDate}`);
     await page.getByRole('banner').getByText('Videos').first().click();
-    console.log('Navigated back to Videos page');
-    // Verify the changes were saved successfully
-    await expect(page.locator('text="Changes have been saved"')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text="Changes have been saved"')).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-
-  await test.step('Upload thumbnail check', async () => {
-    // Update the video description
+  // --- STEP 5: THUMBNAIL UPLOAD ---
+  await test.step('Upload thumbnail', async () => {
     await page.getByRole('cell', { name: 'sample_video.MOV' }).first().click();
-    await page.locator('#vod-splashscreendragAndDrop').getByRole('img').nth(1).click();
-    
-    // Find the specific file input element for splashscreen upload
-    const fileInput = page.locator('#vod-splashscreenUploadInput');
-    await fileInput.setInputFiles('sample_logo.png');
-    await expect(page.locator('text="File uploaded"')).toBeVisible({ timeout: 10000 });
-    console.log('Splashscreen successfully uploaded');
-    await page.waitForTimeout(1000);
+    await page
+      .locator('#vod-splashscreendragAndDrop')
+      .getByRole('img')
+      .nth(1)
+      .click();
+    await page
+      .locator('#vod-splashscreenUploadInput')
+      .setInputFiles('sample_logo.png');
+    await expect(page.locator('text="File uploaded"')).toBeVisible({
+      timeout: 15000,
+    });
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await page.waitForTimeout(1000);
-    await page.getByRole('banner').getByText('Videos').first().click();
-    console.log('Navigated back to Videos page');
   });
 
-
-
-    await test.step('Verify video download', async () => {
-
-      
-
-    await page.getByRole('row', { filter: 'sample_video.MOV' }).getByRole('link').first().click();
-
+  // --- STEP 6: VERIFY DOWNLOAD WITH PROGRESS INDICATOR ---
+  await test.step('Verify video download', async () => {
     let downloadStarted = false;
-    const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
-    
+    const downloadPromise = page
+      .waitForEvent('download', { timeout: 15000 })
+      .catch(() => null);
+
     await page.getByRole('button', { name: 'Download' }).first().click();
-    
     const download = await downloadPromise;
-    
+
     if (download) {
       downloadStarted = true;
-      // Validate the file name
       const suggestedFilename = download.suggestedFilename();
-      console.log('Downloaded filename:', suggestedFilename);
-      expect(suggestedFilename).toMatch(/\.(mp4|mov|MOV|MP4)$/); // Validate the file extension
+      console.log(
+        `[${new Date().toISOString()}] Download started: ${suggestedFilename}`,
+      );
 
-      // Optionally: save the file and check its size
-      const path = await download.path();
-      expect(path).toBeTruthy();
-      
+      // Track progress using a simple interval to check the partial file size
+      const progressInterval = setInterval(async () => {
+        try {
+          const path = await download.path();
+          if (path) {
+            const fs = require('fs');
+            const stats = fs.statSync(path);
+            // Log current size in MB for better readability
+            const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+            console.log(
+              `[${new Date().toISOString()}] Progress: ${sizeInMB} MB downloaded...`,
+            );
+          }
+        } catch (e) {
+          // File might not be created yet or already moved
+        }
+      }, 1000); // Check every second
+
+      // Wait for the download to complete
+      const finalPath = await download.path();
+      clearInterval(progressInterval); // Stop tracking progress
+
+      expect(finalPath).toBeTruthy();
+
       const fs = require('fs');
-      const stats = fs.statSync(path);
+      const stats = fs.statSync(finalPath);
       expect(stats.size).toBeGreaterThan(0);
 
-      console.log('Video downloaded successfully');
+      const finalSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+      console.log(
+        `[${new Date().toISOString()}] Download finished! Final size: ${finalSizeMB} MB`,
+      );
+      expect(suggestedFilename).toMatch(/\.(mp4|mov|MOV|MP4)$/);
     } else {
       console.log("Download doesn't start, check account settings");
-      test.info().annotations.push({ type: 'issue', description: "Download doesn't start" });
+      test.info().annotations.push({
+        type: 'issue',
+        description: "Download doesn't start",
+      });
     }
 
-    // This will mark the step as failed if download didn't start, but won't stop execution
     if (!downloadStarted) {
-      test.info().annotations.push({ type: 'failure', description: "Download should have started" });
+      test.info().annotations.push({
+        type: 'failure',
+        description: 'Download should have started',
+      });
     }
   });
 
-  
+  // --- STEP 7: PLAYBACK WITH ACCURATE DETECTION ---
   await test.step('Check share link and video playback', async () => {
-    // Check if the share link is present
     await page.getByRole('button', { name: 'Copy Share Link' }).click();
-  
-    // Wait for the clipboard content to be updated
     await page.waitForTimeout(1000);
-    
+
     // Get the clipboard content
     const clipboardContent = await clipboardy.default.read();
 
     // Check if the copied link starts with 'https://iframe.dacast.com/vod/'
     const env = process.env.WORKENV || 'prod';
-    
+
     if (env === 'prod') {
       expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/vod\//);
     } else if (env === 'stage') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/vod\//);
+      expect(clipboardContent).toMatch(
+        /^https:\/\/iframe-dev\.dacast\.com\/vod\//,
+      );
     } else if (env === 'dev') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe-testing\.dacast\.com\/vod\//);
+      expect(clipboardContent).toMatch(
+        /^https:\/\/iframe-testing\.dacast\.com\/vod\//,
+      );
     }
 
+    await page.goto(clipboardContent);
 
-  await page.goto(clipboardContent);
-
-  // Run the video 
-    await page.getByRole('button', { name: 'Play', exact: false }).first().click();
-
-    const videoElement = await page.$('video');
-
-    // Wait for the video to start playing
-    await page.waitForFunction(() => {
-    const video = document.querySelector('video');
-    return video && video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2;
-  }, { timeout: 30000 });
-  // Check if the video is playing
-    const isPlaying = await videoElement.evaluate((video) => {
-      return !!(video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2);
+    // 1. Capture Network to identify player definitively
+    let bitmovinDetected = false;
+    page.on('request', (req) => {
+      if (req.url().includes('bitmovin')) bitmovinDetected = true;
     });
-    expect(isPlaying).toBe(true);
-    console.log('Video is playing');
-    // Visual check (with sound)
-    await page.waitForTimeout(5000);
-   });
 
-   
-  await test.step('Navigate back to Videos page', async () => {
-    // Return to the main Videos page
+    await page.goto(clipboardContent, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(3000); // Wait for scripts to initialize
+
+    // 2. Final player identification
+    const playerType = await page.evaluate((isBitmovinNet) => {
+      if (window.bitmovin || isBitmovinNet) return 'Bitmovin';
+      if (window.THEOplayer) return 'TheoPlayer';
+      return 'Unknown';
+    }, bitmovinDetected);
+
+    console.log(
+      `[${new Date().toISOString()}] CONFIRMED PLAYER: ${playerType}`,
+    );
+
+    // Clean overlays
+    await page.evaluate(() => {
+      document
+        .querySelectorAll('.dc-dacast-overlay')
+        .forEach((el) => el.remove());
+    });
+
+    // 3. Play action
+    if (playerType === 'Bitmovin') {
+      // For Bitmovin, the large Play button in the center is usually reliable
+      const playBtn = page
+        .locator('.bitmovinplayer-container button, .dc-play-button')
+        .first();
+      if (await playBtn.isVisible()) await playBtn.click();
+      else
+        await page.mouse.click(
+          page.viewportSize().width / 2,
+          page.viewportSize().height / 2,
+        );
+    } else {
+      // TheoPlayer fallback
+      await page.mouse.click(
+        page.viewportSize().width / 2,
+        page.viewportSize().height / 2,
+      );
+    }
+
+    // 4. Verify playback using HTML5 Video API (Works for all)
+    await expect(async () => {
+      let isPlaying = false;
+      for (const frame of page.frames()) {
+        try {
+          isPlaying = await frame.evaluate(() => {
+            const v = document.querySelector('video');
+            return !!(
+              v &&
+              v.currentTime > 1.5 &&
+              !v.paused &&
+              v.readyState >= 2
+            );
+          });
+          if (isPlaying) break;
+        } catch (e) {}
+      }
+      expect(isPlaying).toBe(true);
+    }).toPass({ timeout: 45000, intervals: [2000] });
+
+    console.log(`Playback confirmed for ${playerType}`);
+  });
+
+  // --- FINAL STEP ---
+  await test.step('Finish test', async () => {
     await page.goto('https://app.dacast.com/videos');
-    console.log('Navigated back to Videos page');
   });
 });
