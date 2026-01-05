@@ -1,7 +1,12 @@
 const { test, expect } = require('./utils');
+const { spawn } = require('child_process');
 
 let clipboardy;
 let streamName;
+let ffmpegProcess;
+let shareLink;
+let streamKey;
+let streamUrl;
 
 test.beforeAll(async () => {
   clipboardy = await import('clipboardy');
@@ -41,9 +46,6 @@ test('Create stream test', async ({ page }) => {
   });
     
   await test.step('Create Stream', async () => {
-    
-    // Start the process of creating a new stream
-
     await page.waitForTimeout(1000);
     const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
     if (createLiveStreamButton) {
@@ -75,41 +77,11 @@ test('Create stream test', async ({ page }) => {
         
     const createButton = page.locator('div.sc-iMTnTL:has(button:has-text("Create")):has(button:has-text("Back")) button:has-text("Create")');
     await createButton.click();
-
-    
-    
-  // Find the toggle by exact text "Live Stream Online"
-    const streamOnlineToggle = page.locator('div:has(> span:text-is("Live Stream Online")) > input[type="checkbox"]');
-
-    // Checking if Live Stream Online is enabled
-    const isStreamOnlineChecked = await streamOnlineToggle.isChecked();
-
-    if (isStreamOnlineChecked) {
-      console.log('Live Stream Online toggle is enabled.');
-    } else {
-      console.log('Live Stream Online toggle is disabled.');
-    }
-    // Copy the share link
-    await page.getByRole('button', { name: 'Copy Share Link' }).click();
-    
-    // Wait for the clipboard content to be updated
     await page.waitForTimeout(1000);
-    
-    // Get the clipboard content
-    const clipboardContent = await clipboardy.default.read();
+    console.log(`Stream "${streamName}" created`);
+  });
 
-    // Check if the copied link starts with 'https://iframe.dacast.com/live/'
-    const env = process.env.WORKENV || 'prod';
-    
-    if (env === 'prod') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/live\//);
-    } else if (env === 'stage') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/live\//);
-    } else if (env === 'dev') {
-      expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/live\//);
-    }
-    console.log('Copied share link:', clipboardContent);
-
+  await test.step('Configure DVR settings', async () => {
     await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
     console.log('Clicked on Settings');
 
@@ -123,21 +95,189 @@ test('Create stream test', async ({ page }) => {
     // Wait for the success notification to appear
     await page.waitForSelector('text=Changes have been saved', { state: 'visible', timeout: 10000 });
     console.log('DVR settings saved successfully');
- 
-    // Navigate to the Live Streams page
-    await page.getByRole('link', { name: 'Live Streams' }).click();
-
-    // If there are still no stream links, wait again and reload
-    await page.waitForTimeout(15000);
-    console.log('Reloaded the page to get the stream appeared.');
-    await page.reload();
   });
 
+  await test.step('Get Stream Key', async () => {
+    await page.getByRole('button', { name: 'Encoder Setup' }).click();
+    await page.waitForTimeout(1000);
+    
+    // Click to copy stream URL to clipboard
+    await page.locator('.sc-izQBue > .sc-gsFSXq > svg > path:nth-child(2)').first().click();
+    await page.waitForTimeout(500);
+    
+    // Get stream URL from clipboard
+    streamUrl = await clipboardy.default.read();
+    console.log('Stream URL:', streamUrl);
 
-  
+    // Click to copy stream key to clipboard
+    await page.locator('.sc-dChVcU > .relative > .sc-izQBue > .sc-gsFSXq > svg > path:nth-child(2)').click();
+    await page.waitForTimeout(500);
+    
+    // Get stream key from clipboard
+    streamKey = await clipboardy.default.read();
+    console.log('Stream Key:', streamKey);
+    
+    await page.getByRole('button', { name: 'Close' }).click();
+  });
+
+  await test.step('Start ffmpeg stream', async () => {
+    const fullRtmpUrl = `${streamUrl}/${streamKey}`;
+    console.log('Starting ffmpeg stream to:', fullRtmpUrl);
+
+    ffmpegProcess = spawn('ffmpeg', [
+      '-re',                          // Read input at native frame rate
+      '-stream_loop', '-1',           // Loop indefinitely
+      '-i', 'sample_video.MOV',       // Input file
+      '-c:v', 'libx264',              // Video codec
+      '-preset', 'veryfast',          // Encoding speed preset
+      '-b:v', '2500k',                // Video bitrate
+      '-maxrate', '2500k',            // Max video bitrate
+      '-bufsize', '5000k',            // Buffer size
+      '-c:a', 'aac',                  // Audio codec
+      '-b:a', '128k',                 // Audio bitrate
+      '-ar', '44100',                 // Audio sample rate
+      '-f', 'flv',                    // Output format
+      fullRtmpUrl                     // RTMP destination
+    ], {
+      stdio: ['pipe', 'pipe', 'pipe']  // Enable stdin to send 'q' command
+    });
+
+    ffmpegProcess.stderr.on('data', (data) => {
+      console.log(`ffmpeg: ${data}`);
+    });
+
+    ffmpegProcess.on('error', (error) => {
+      console.error('ffmpeg error:', error.message);
+    });
+
+    ffmpegProcess.on('close', (code) => {
+      console.log(`ffmpeg process exited with code ${code}`);
+    });
+
+    // Wait for ffmpeg to start streaming
+    console.log('Waiting for stream to initialize...');
+    await page.waitForTimeout(10000);
+  });
+
+  await test.step('Get Share Link', async () => {
+    // Find the toggle by exact text "Live Stream Online"
+    const streamOnlineToggle = page.locator('div:has(> span:text-is("Live Stream Online")) > input[type="checkbox"]');
+
+    // Checking if Live Stream Online is enabled
+    const isStreamOnlineChecked = await streamOnlineToggle.isChecked();
+
+    if (isStreamOnlineChecked) {
+      console.log('Live Stream Online toggle is enabled.');
+    } else {
+      console.log('Live Stream Online toggle is disabled.');
+    }
+    
+    // Copy the share link
+    await page.getByRole('button', { name: 'Copy Share Link' }).click();
+    
+    // Wait for the clipboard content to be updated
+    await page.waitForTimeout(1000);
+    
+    // Get the clipboard content
+    const clipboardContent = await clipboardy.default.read();
+    shareLink = clipboardContent; // Save for playback verification
+
+    // Check if the copied link starts with 'https://iframe.dacast.com/live/'
+    const env = process.env.WORKENV || 'prod';
+    
+    if (env === 'prod') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe\.dacast\.com\/live\//);
+    } else if (env === 'stage') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-dev\.dacast\.com\/live\//);
+    } else if (env === 'dev') {
+      expect(clipboardContent).toMatch(/^https:\/\/iframe-test\.dacast\.com\/live\//);
+    }
+    console.log('Copied share link:', clipboardContent);
+  });
+
+  await test.step('Verify stream playback', async () => {
+    console.log('Opening share link to verify playback:', shareLink);
+    await page.goto(shareLink);
+
+    // Wait for player to load
+    await page.waitForTimeout(5000);
+
+    // Detect player type (Bitmovin or TheoPlayer)
+    const bitmovinDetected = await page.evaluate(() => {
+      return !!(
+        document.querySelector('.bitmovinplayer-container') ||
+        window.bitmovin
+      );
+    });
+
+    const playerType = bitmovinDetected ? 'Bitmovin' : 'TheoPlayer';
+    console.log(`Detected player: ${playerType}`);
+
+    // Clean overlays if present
+    await page.evaluate(() => {
+      document.querySelectorAll('.dc-dacast-overlay').forEach((el) => el.remove());
+    });
+
+    // Click to play
+    if (playerType === 'Bitmovin') {
+      const playBtn = page.locator('.bitmovinplayer-container button, .dc-play-button').first();
+      if (await playBtn.isVisible()) {
+        await playBtn.click();
+      } else {
+        await page.mouse.click(
+          page.viewportSize().width / 2,
+          page.viewportSize().height / 2
+        );
+      }
+    } else {
+      await page.mouse.click(
+        page.viewportSize().width / 2,
+        page.viewportSize().height / 2
+      );
+    }
+
+    // Verify playback using HTML5 Video API
+    await expect(async () => {
+      let isPlaying = false;
+      for (const frame of page.frames()) {
+        try {
+          isPlaying = await frame.evaluate(() => {
+            const v = document.querySelector('video');
+            return !!(
+              v &&
+              v.currentTime > 1.5 &&
+              !v.paused &&
+              v.readyState >= 2
+            );
+          });
+          if (isPlaying) break;
+        } catch (e) {}
+      }
+      expect(isPlaying).toBe(true);
+    }).toPass({ timeout: 45000, intervals: [2000] });
+
+    console.log(`Stream playback confirmed for ${playerType}`);
+    
+    // Keep player open for visual verification
+    console.log('Keeping player open for 5 seconds...');
+    await page.waitForTimeout(5000);
+
+    // Stop ffmpeg - no longer needed after playback verified
+    if (ffmpegProcess) {
+      console.log('Stopping ffmpeg process...');
+      // Send 'q' command to ffmpeg for graceful shutdown (works on Windows)
+      ffmpegProcess.stdin.write('q');
+      ffmpegProcess.stdin.end();
+      // Wait a bit for ffmpeg to finish
+      await page.waitForTimeout(2000);
+      ffmpegProcess = null;
+    }
+  });
 
   await test.step('Check and remove DVR stream if present', async () => {
-
+    // Navigate to Live Streams page
+    await page.goto('https://app.dacast.com/livestreams');
+    await page.waitForTimeout(2000);
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
     const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
