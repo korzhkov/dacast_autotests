@@ -1,5 +1,5 @@
 <h3>Project Details:</h3>
-This project automatically tests major functionalities of the Dacast platform UI. Tests are written with Playwright and can be run in parallel or sequentially. Each test is stored as a separate file in the `src` folder and is self-contained, allowing independent execution. For example, if the playlist test requires videos, they will be uploaded at the beginning of the test.
+This project automatically tests major functionalities of the Dacast platform UI and API. Tests are written with Playwright and can be run in parallel or sequentially. Each test is stored as a separate file in the `src` folder and is self-contained, allowing independent execution. For example, if the playlist test requires videos, they will be uploaded at the beginning of the test.
 
 Some tests validate copy-to-clipboard functionality, using the `clipboardy` library to read clipboard data. Other tests validate video playback, which doesn't work on Chromium (likely due to a bug in the THEOplayer used by Dacast). Therefore, Chrome is used by default, although it's possible to run tests in other browsers.
 
@@ -20,27 +20,42 @@ The following tests are currently implemented:
 </ul>
 </ul>
 
-<h3>Create stream:</h3>
+<h3>Create stream (with live playback validation):</h3>
 <ul>
-<li>Go to the Videos page</li>
-<li>Check for existing videos "sample_video.MOV"</li>
-<li>If the video does not exist, upload it</li>
-<li>Go to the Live Streams page</li>
-<li>Click on the "Create Stream" button</li>
-<li>Select Standard Passthrough Channel</li>
-<li>Open advanced options</li>
-<li>Validate that Adaptive bitrate 1080p Akamai Delivery is present</li>
-<li>Select Standard Passthrough Akamai Delivery</li>
-<li>Enable DVR and later validate that it's enabled</li>
-<li>Validate that Back button is present</li>
-<li>Complete the stream creation process</li>
-<li>Validate that Stream Online toggle is enabled</li>
-<li>Copy the share link to clipboard and validate that copied link match the template</li>
-<li>Navigate to the Live Streams page</li>
-<li>Verify that the stream appears in the Live Streams page</li>
-<li>Delete the stream</li>
-<li>Validate that the stream is deleted</li>
+<li>Check for and remove any existing test DVR streams</li>
+<li>Create a new Standard Passthrough Channel:
+  <ul>
+    <li>Validate that Adaptive bitrate 1080p Akamai Delivery option is present</li>
+    <li>Select Standard Passthrough Akamai Delivery</li>
+    <li>Validate that Back button is present</li>
+  </ul>
+</li>
+<li>Configure DVR settings:
+  <ul>
+    <li>Enable Recording</li>
+    <li>Enable DVR (Rewind)</li>
+  </ul>
+</li>
+<li>Get Stream URL and Stream Key from Encoder Setup</li>
+<li>Start ffmpeg streaming process:
+  <ul>
+    <li>Stream sample_video.MOV to the channel via RTMP</li>
+    <li>Loop video indefinitely during test</li>
+  </ul>
+</li>
+<li>Get and validate Share Link (format depends on environment)</li>
+<li>Verify live stream playback:
+  <ul>
+    <li>Open share link in browser</li>
+    <li>Detect player type (Bitmovin or TheoPlayer)</li>
+    <li>Start playback and verify video is playing</li>
+  </ul>
+</li>
+<li>Stop ffmpeg process gracefully</li>
+<li>Cleanup: Delete the test stream</li>
+<li>Validate DVR features (Recording and Rewind icons) before deletion</li>
 </ul>
+<p><strong>Prerequisites:</strong> ffmpeg must be installed and available in PATH</p>
 
 <h3>Create VOD2Live stream:</h3>
 <ul>
@@ -81,6 +96,20 @@ The following tests are currently implemented:
   </ul>
 </li>
 <li>Navigate back to the Videos page</li>
+</ul>
+
+<h3>Trimming VOD:</h3>
+<ul>
+<li>Pre-check: Reuse existing sample_video.MOV if present, delete any leftover trimmed videos</li>
+<li>Upload sample_video.MOV if not present</li>
+<li>Wait for video encoding to complete (polling renditions status)</li>
+<li>Open video editor (Trimming tab)</li>
+<li>Set trim points (start and end markers)</li>
+<li>Create trimmed video with name "[TRIMMED] sample_video.MOV"</li>
+<li>Wait for trimmed video to finish processing</li>
+<li>Verify trimmed video duration matches expected duration</li>
+<li>Verify trimmed video file size is reasonable</li>
+<li>Validate trimmed video playback works correctly</li>
 </ul>
 
 <h3>Create folder:</h3>
@@ -154,6 +183,17 @@ The following tests are currently implemented:
 </li>
 </ul>
 
+<h3>Create Schedule:</h3>
+<ul>
+<li>Go to the Videos page and check for existing videos</li>
+<li>Upload required videos if they don't exist</li>
+<li>Navigate to the Schedule page</li>
+<li>Create a new schedule with specified parameters</li>
+<li>Add videos to the schedule</li>
+<li>Configure schedule timing and settings</li>
+<li>Verify schedule is created and appears in the list</li>
+</ul>
+
 <h3>Validate Analytics:</h3>
 <ul>
 <li>Navigate to the Analytics page and validate that the page is loaded and Time Period is working on Dashboard of the Analytics page</li>
@@ -194,6 +234,28 @@ The following tests are currently implemented:
 <li>Verify that API response for updated stream has updated description and title, and live_recording_enabled is set to false</li>
 <li><a href="https://docs.dacast.com/reference/list-streams" target="_blank">Get list of streams</a> and verify that API response for created stream exists in the list</li>
 <li><a href="https://docs.dacast.com/reference/lookup-stream" target="_blank">Get stream info</a> and verify that API response for created stream exists in info, live_recording_enabled is set to false, live_dvr_enabled is set to true</li>
+</ul>
+
+<h3>API Playlist Tests:</h3>
+<ul>
+<li>Create a new VOD via API and wait for it to finish processing</li>
+<li>Create a new playlist via API</li>
+<li>Add the VOD to the playlist</li>
+<li>Verify playlist content is correctly updated</li>
+<li>Update playlist metadata (title, description)</li>
+<li>Remove content from playlist</li>
+<li>Delete playlist via API</li>
+<li>Delete VOD via API</li>
+<li>Verify cleanup was successful</li>
+</ul>
+
+<h3>API VOD Security Tests:</h3>
+<ul>
+<li>Test VOD API access control with different API keys</li>
+<li>Positive tests: Verify owner can GET, PUT, DELETE their own VODs</li>
+<li>Negative tests: Verify other users cannot access VODs they don't own</li>
+<li>Test error responses for unauthorized access attempts</li>
+<li>Verify proper HTTP status codes (401, 403, 404) for security violations</li>
 </ul>
 
 <h3>Cleaner:</h3>
