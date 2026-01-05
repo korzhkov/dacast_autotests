@@ -1,34 +1,57 @@
+/**
+ * Create Stream Test
+ * 
+ * This test validates the complete livestream workflow:
+ * 1. Creates a new stream channel with DVR settings
+ * 2. Starts streaming via ffmpeg
+ * 3. Verifies playback works correctly
+ * 4. Cleans up test data
+ * 
+ * Prerequisites:
+ * - ffmpeg must be installed and available in PATH
+ * - sample_video.MOV must exist in the project root
+ */
+
 const { test, expect } = require('./utils');
 const { spawn } = require('child_process');
 
+// Module-level variables shared across test steps
 let clipboardy;
-let streamName;
-let ffmpegProcess;
-let shareLink;
-let streamKey;
-let streamUrl;
+let streamName;      // Unique name for the test stream
+let ffmpegProcess;   // Reference to ffmpeg child process
+let shareLink;       // Public URL for stream playback
+let streamKey;       // RTMP stream key from Encoder Setup
+let streamUrl;       // RTMP server URL from Encoder Setup
 
 test.beforeAll(async () => {
+  // Dynamic import for clipboardy (ESM module)
   clipboardy = await import('clipboardy');
 });
 
 test('Create stream test', async ({ page }) => {
-  // Set a longer timeout for this test as stream creation might take a while
-  test.setTimeout(300000);
+  // Extended timeout for stream creation and playback verification
+  test.setTimeout(300000); // 5 minutes
 
-    await test.step('Check and remove test DVR stream if present', async () => {
+  // ============================================================
+  // STEP 1: Cleanup - Remove any existing test streams
+  // ============================================================
+  await test.step('Check and remove test DVR stream if present', async () => {
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
+    
     const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
     const dvrCellCount = await dvrCell.count();
 
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
 
+      // Search for test streams and delete via bulk actions
       await page.getByPlaceholder('Search by Title...').click();
       await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
       await page.waitForTimeout(1000);
+      
+      // Select all and delete
       await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
       await page.waitForTimeout(1000);
       await page.getByRole('button', { name: 'Bulk Actions' }).click();
@@ -44,9 +67,14 @@ test('Create stream test', async ({ page }) => {
       console.log('DVR cell not found, no action needed.');
     }
   });
-    
+
+  // ============================================================
+  // STEP 2: Create new stream channel
+  // ============================================================
   await test.step('Create Stream', async () => {
     await page.waitForTimeout(1000);
+    
+    // Handle different UI states (new account vs existing streams)
     const createLiveStreamButton = await page.$('button:has-text("Create Live Stream")');
     if (createLiveStreamButton) {
       await createLiveStreamButton.click();
@@ -55,40 +83,52 @@ test('Create stream test', async ({ page }) => {
       await page.getByRole('button', { name: 'Create' }).first().click();
     }
     
+    // Select Standard Passthrough Channel type
     await page.getByText('Standard Passthrough Channel').first().click();
     await page.getByRole('button', { name: 'Choose advanced options' }).nth(1).click();
+    
+    // Generate unique stream name with timestamp
     const currentDate = new Date();
     const formattedDate = `${currentDate.toISOString().slice(0, 19).replace('T', ' ')}.${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
     streamName = `This is a test DVR stream ${formattedDate}`;
     await page.getByPlaceholder('My Live Stream').fill(streamName);
+    
+    // Open stream type dropdown
     await page.locator('div:nth-child(3) > .sc-gFAWRd > #dropdownTitle > .sc-klVQfs > .sc-gsFSXq > svg > path:nth-child(2)').click();
     
-    // Validate that Adaptive bitrate 1080p Akamai Delivery is present (requirements)
+    // Validate Akamai 1080p option is available (business requirement)
     const akamai1080 = page.locator('[id="streamSlotTypeDropdown_Adaptive\\ Bitrate\\ 1080p\\ Akamai\\ Delivery0"] div');
     await expect(akamai1080).toBeVisible({ timeout: 1000});
     console.log('Akamai 1080p found, continuing with the test.');
 
+    // Select Standard Passthrough delivery
     await page.getByText('Standard Passthrough Akamai Delivery').first().click();
     
-    // Check if the Back button is present (based on requirements)
+    // Validate Back button is present (UX requirement)
     const backButton = page.getByRole('button', { name: 'Back' });
     await expect(backButton).toBeVisible({ timeout: 1000 });
     console.log('Back button found, continuing with the test.');
-        
+    
+    // Click Create button (specific selector to avoid conflicts)
     const createButton = page.locator('div.sc-iMTnTL:has(button:has-text("Create")):has(button:has-text("Back")) button:has-text("Create")');
     await createButton.click();
     await page.waitForTimeout(1000);
     console.log(`Stream "${streamName}" created`);
   });
 
+  // ============================================================
+  // STEP 3: Enable DVR settings (Recording + Rewind)
+  // ============================================================
   await test.step('Configure DVR settings', async () => {
     await page.locator('#pageContentContainer').getByText('Settings', { exact: true }).click();
     console.log('Clicked on Settings');
 
+    // Enable Recording first (required for DVR)
     await page.getByTestId('liveRecordingToggleLabel').click();
     console.log('Clicked on Recordings');
     await page.waitForTimeout(2000);
 
+    // Enable DVR (Rewind functionality)
     await page.getByTestId('liveDvrToggleLabel').click();
     console.log('Clicked on DVR');
     
@@ -97,11 +137,14 @@ test('Create stream test', async ({ page }) => {
     console.log('DVR settings saved successfully');
   });
 
+  // ============================================================
+  // STEP 4: Get RTMP credentials from Encoder Setup
+  // ============================================================
   await test.step('Get Stream Key', async () => {
     await page.getByRole('button', { name: 'Encoder Setup' }).click();
     await page.waitForTimeout(1000);
     
-    // Click to copy stream URL to clipboard
+    // Copy Stream URL (RTMP server address)
     await page.locator('.sc-izQBue > .sc-gsFSXq > svg > path:nth-child(2)').first().click();
     await page.waitForTimeout(500);
     
@@ -109,7 +152,7 @@ test('Create stream test', async ({ page }) => {
     streamUrl = await clipboardy.default.read();
     console.log('Stream URL:', streamUrl);
 
-    // Click to copy stream key to clipboard
+    // Copy Stream Key (authentication token)
     await page.locator('.sc-dChVcU > .relative > .sc-izQBue > .sc-gsFSXq > svg > path:nth-child(2)').click();
     await page.waitForTimeout(500);
     
@@ -120,28 +163,33 @@ test('Create stream test', async ({ page }) => {
     await page.getByRole('button', { name: 'Close' }).click();
   });
 
+  // ============================================================
+  // STEP 5: Start ffmpeg streaming process
+  // ============================================================
   await test.step('Start ffmpeg stream', async () => {
     const fullRtmpUrl = `${streamUrl}/${streamKey}`;
     console.log('Starting ffmpeg stream to:', fullRtmpUrl);
 
+    // Launch ffmpeg as background process
     ffmpegProcess = spawn('ffmpeg', [
-      '-re',                          // Read input at native frame rate
-      '-stream_loop', '-1',           // Loop indefinitely
+      '-re',                          // Read input at native frame rate (real-time)
+      '-stream_loop', '-1',           // Loop video indefinitely
       '-i', 'sample_video.MOV',       // Input file
-      '-c:v', 'libx264',              // Video codec
-      '-preset', 'veryfast',          // Encoding speed preset
+      '-c:v', 'libx264',              // H.264 video codec
+      '-preset', 'veryfast',          // Fast encoding (less CPU)
       '-b:v', '2500k',                // Video bitrate
-      '-maxrate', '2500k',            // Max video bitrate
-      '-bufsize', '5000k',            // Buffer size
-      '-c:a', 'aac',                  // Audio codec
+      '-maxrate', '2500k',            // Max bitrate cap
+      '-bufsize', '5000k',            // Buffer size (2x bitrate)
+      '-c:a', 'aac',                  // AAC audio codec
       '-b:a', '128k',                 // Audio bitrate
       '-ar', '44100',                 // Audio sample rate
-      '-f', 'flv',                    // Output format
-      fullRtmpUrl                     // RTMP destination
+      '-f', 'flv',                    // FLV output format (required for RTMP)
+      fullRtmpUrl
     ], {
-      stdio: ['pipe', 'pipe', 'pipe']  // Enable stdin to send 'q' command
+      stdio: ['pipe', 'pipe', 'pipe']  // Enable stdin for graceful shutdown
     });
 
+    // Log ffmpeg output for debugging
     ffmpegProcess.stderr.on('data', (data) => {
       console.log(`ffmpeg: ${data}`);
     });
@@ -154,11 +202,14 @@ test('Create stream test', async ({ page }) => {
       console.log(`ffmpeg process exited with code ${code}`);
     });
 
-    // Wait for ffmpeg to start streaming
+    // Wait for stream to initialize on the server
     console.log('Waiting for stream to initialize...');
     await page.waitForTimeout(10000);
   });
 
+  // ============================================================
+  // STEP 6: Get and validate Share Link
+  // ============================================================
   await test.step('Get Share Link', async () => {
     // Find the toggle by exact text "Live Stream Online"
     const streamOnlineToggle = page.locator('div:has(> span:text-is("Live Stream Online")) > input[type="checkbox"]');
@@ -182,7 +233,7 @@ test('Create stream test', async ({ page }) => {
     const clipboardContent = await clipboardy.default.read();
     shareLink = clipboardContent; // Save for playback verification
 
-    // Check if the copied link starts with 'https://iframe.dacast.com/live/'
+    // Validate share link format based on environment
     const env = process.env.WORKENV || 'prod';
     
     if (env === 'prod') {
@@ -195,6 +246,9 @@ test('Create stream test', async ({ page }) => {
     console.log('Copied share link:', clipboardContent);
   });
 
+  // ============================================================
+  // STEP 7: Verify stream playback in browser
+  // ============================================================
   await test.step('Verify stream playback', async () => {
     console.log('Opening share link to verify playback:', shareLink);
     await page.goto(shareLink);
@@ -218,54 +272,60 @@ test('Create stream test', async ({ page }) => {
       document.querySelectorAll('.dc-dacast-overlay').forEach((el) => el.remove());
     });
 
-    // Click to play
+    // Click to start playback (different approach per player)
     if (playerType === 'Bitmovin') {
       const playBtn = page.locator('.bitmovinplayer-container button, .dc-play-button').first();
       if (await playBtn.isVisible()) {
         await playBtn.click();
       } else {
+        // Fallback: click center of viewport
         await page.mouse.click(
           page.viewportSize().width / 2,
           page.viewportSize().height / 2
         );
       }
     } else {
+      // TheoPlayer: click center of viewport
       await page.mouse.click(
         page.viewportSize().width / 2,
         page.viewportSize().height / 2
       );
     }
 
-    // Verify playback using HTML5 Video API
+    // Verify video is actually playing using HTML5 Video API
+    // Retry with polling because stream might need time to buffer
     await expect(async () => {
       let isPlaying = false;
+      // Check all frames (video might be in iframe)
       for (const frame of page.frames()) {
         try {
           isPlaying = await frame.evaluate(() => {
             const v = document.querySelector('video');
             return !!(
               v &&
-              v.currentTime > 1.5 &&
-              !v.paused &&
-              v.readyState >= 2
+              v.currentTime > 1.5 &&   // Video has progressed
+              !v.paused &&              // Not paused
+              v.readyState >= 2         // Has enough data
             );
           });
           if (isPlaying) break;
-        } catch (e) {}
+        } catch (e) {
+          // Frame might not be accessible, continue to next
+        }
       }
       expect(isPlaying).toBe(true);
     }).toPass({ timeout: 45000, intervals: [2000] });
 
     console.log(`Stream playback confirmed for ${playerType}`);
     
-    // Keep player open for visual verification
+    // Keep player open briefly for visual verification
     console.log('Keeping player open for 5 seconds...');
     await page.waitForTimeout(5000);
 
-    // Stop ffmpeg - no longer needed after playback verified
+    // Stop ffmpeg gracefully
     if (ffmpegProcess) {
       console.log('Stopping ffmpeg process...');
-      // Send 'q' command to ffmpeg for graceful shutdown (works on Windows)
+      // Send 'q' command - ffmpeg's standard quit signal (works on all platforms)
       ffmpegProcess.stdin.write('q');
       ffmpegProcess.stdin.end();
       // Wait a bit for ffmpeg to finish
@@ -274,28 +334,28 @@ test('Create stream test', async ({ page }) => {
     }
   });
 
+  // ============================================================
+  // STEP 8: Cleanup - Remove test stream
+  // ============================================================
   await test.step('Check and remove DVR stream if present', async () => {
-    // Navigate to Live Streams page
     await page.goto('https://app.dacast.com/livestreams');
     await page.waitForTimeout(2000);
     await page.locator('#scrollbarWrapper').getByText('Live Streams').click();
     await page.waitForTimeout(1000);
+    
     const dvrCell = await page.getByRole('cell', { name: 'This is a test DVR stream' });
     const dvrCellCount = await dvrCell.count();
 
-    
     if (dvrCellCount > 0) {
       console.log('DVR streams found, attempting to delete them.');
 
-      
+      // Search for test streams
       await page.getByPlaceholder('Search by Title...').click();
       await page.getByPlaceholder('Search by Title...').fill('\"This is a test DVR stream\"');
       await page.getByPlaceholder('Search by Title...').press('Enter');
-
-      // Wait for the search results to load
       await page.waitForTimeout(2000);
 
-      // Primary selectors: Search by content and structure
+      // Verify DVR features are visible (Recording and Rewind icons)
       const recordingTooltip = page.locator('div.sc-kAyceB:has(span[id^="recordingTooltip"])');
       const rewindTooltip = page.locator('div.sc-kAyceB:has(div[id^="rewindTooltip"])');
 
@@ -317,7 +377,7 @@ test('Create stream test', async ({ page }) => {
       console.log(`Primary method: Found ${recordingTooltipCount} recording tooltip elements`);
       console.log(`Primary method: Found ${rewindTooltipCount} rewind tooltip elements`);
 
-      // If primary method failed, try alternative method
+      // Fallback to text-based selectors
       if (recordingTooltipCount === 0 || rewindTooltipCount === 0) {
         console.log('Trying alternative selectors...');
         
@@ -337,8 +397,8 @@ test('Create stream test', async ({ page }) => {
         console.log('Elements found using primary method');
       }
 
-            
-      await page.waitForTimeout(1000);  
+      // Select all and delete via bulk actions
+      await page.waitForTimeout(1000);
       await page.getByRole('row', { name: 'Title Date Status Features' }).locator('label div').click();
       await page.waitForTimeout(1000);
       await page.getByRole('button', { name: 'Bulk Actions' }).click();
@@ -348,8 +408,6 @@ test('Create stream test', async ({ page }) => {
       await page.getByRole('button', { name: 'Delete' }).click();
       await page.waitForTimeout(2000);
       console.log('DVR cell deleted.');
-
-      
     } else {
       console.error('DVR cell not found - this is an error condition');
       test.fail();
