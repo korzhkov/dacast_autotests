@@ -49,7 +49,7 @@ test('Cleaner', async ({ page }) => {
 
       if (!noItemsFound) {
         await page
-        .getByRole('row', { name: 'Title Size Status User' }).locator('label div')
+        .getByRole('row', { name: 'Title Size Status' }).locator('label div')
         .click();
         await page.getByRole('button', { name: 'Bulk Actions' }).click();
         await page.getByRole('list').getByText('Delete').click();
